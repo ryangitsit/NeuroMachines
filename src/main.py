@@ -1,7 +1,6 @@
-
-from liquid_object_test import *
+from LSM import *
 from arg_parser import setup_argument_parser
-import string
+
 
 
 def main():
