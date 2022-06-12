@@ -111,7 +111,6 @@ class LiquidState():
         #self.zipped = np.array(list(zip(spikemon.i,spikemon.t*1000)))
         indices = np.array(spikemon.i)
         times = np.array(spikemon.t/ms)
-        print(times)
         #nets.restore()
 
         return [indices,times]

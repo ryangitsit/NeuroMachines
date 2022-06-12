@@ -1,8 +1,6 @@
 from LSM import *
 from arg_parser import setup_argument_parser
 
-
-
 def main():
 
     ### SETUP ###
