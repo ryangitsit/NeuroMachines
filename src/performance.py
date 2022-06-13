@@ -9,7 +9,7 @@ from processing import read_in_ranks, print_rankings
 # sweep = 'full_sweep'
 # ranked = read_in_ranks(sweep,'full_sweep-rankings')
 
-sweep = 'STSP_sweep'
+sweep = 'sparse_sweep'
 ranked = read_in_ranks(sweep,f'{sweep}-rankings')
 #print_rankings(ranked,"Performance",100)
 
@@ -33,9 +33,9 @@ features = {
     'rnd=':0,
     'geo=':0,
     'smw':0,
-    'RS=0.15':0,
-    'RS=0.3':0,
-    'RS=0.45':0,
+    'RS=0.01':0,
+    'RS=0.05':0,
+    'RS=0.1':0,
     'delay=0.0':0,
     'delay=1.5':0,
     'delay=3.0':0,
@@ -62,7 +62,7 @@ features = {
 
 }
 
-lim = 100
+lim = 20
 feat = ranking_analysis(ranked,features,lim)
 
 
@@ -74,8 +74,6 @@ keys_list = list(feat)
 
 keys = keys_list[12:21]
 
-for k in keys:
-    print(feat[k])
 #%%
 
 def hist_ranked(keys,feat):

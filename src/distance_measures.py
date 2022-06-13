@@ -23,11 +23,11 @@ def get_input(sweep,classes,replicas,N,T):
 
     return encoded_inputs
 
-sweep = 'full_sweep'
-classes = ["A", "B", "C"]
+sweep = 'sparse_sweep'
+classes = ["ZERO", "ONE", "TWO"]
 replicas = 3
 N = 100
-T = 100
+T = 700
 inputs = get_input(sweep, classes, replicas, N, T)
 
 #%%

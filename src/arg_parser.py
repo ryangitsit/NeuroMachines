@@ -30,8 +30,8 @@ def setup_argument_parser():
     # liquids
     parser.add_argument("--learning", help = " ", choices = ['Maass', 'STSP', 'STDP'], type = str, default = "STSP")
     parser.add_argument("--topology", help = " ", choices = ['rnd', 'geo', 'smw'], type = str, default = "rnd")
-    parser.add_argument("--input_sparsity", help = " ", type = float, default = 0.2)
-    parser.add_argument("--res_sparsity", help = " ", type = float, default = 0.3)
+    parser.add_argument("--input_sparsity", help = " ", type = float, default = 0.01)
+    parser.add_argument("--res_sparsity", help = " ", type = float, default = 0.05)
     parser.add_argument("--STSP_U", help = " ", type = float, default = 0.6)
 
     

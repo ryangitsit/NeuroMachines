@@ -6,13 +6,13 @@ import numpy as np
 
 
 ## PCs
-type = 'PCs'
+# type = 'PCs'
 # dirName = 'results/full_sweep/performance'
 # item='full_sweep_99_stacks'
 
 ## Full Dimensionality
 type = 'groups'
-dirName = 'results/STSP_sweep/analysis'
+dirName = 'results/sparse_sweep/analysis'
 #dirName = 'results/full_sweep/analysis'
 
 item = "m=99_groups"
@@ -20,7 +20,7 @@ item = "m=99_groups"
 j_stacks = read_json(dirName,item)
 
 
-sweep = 'STSP_sweep'
+sweep = 'sparse_sweep'
 write=False
 
 def cluster_check(dict,dirName,sweep,type,write):

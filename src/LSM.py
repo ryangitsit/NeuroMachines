@@ -4,24 +4,26 @@ import matplotlib.pyplot as plt
 import tables
 import os
 from sklearn.linear_model import LogisticRegression
+import string
 
 from processing import *
 from pop_generators import reservoir
+from poisson_generator import gen_poisson_pattern,create_jitter
 
 from plotting import performance, raster_save
 
 
-
 class Input:
-    def __init__(self,dataset,file):
-        self.file = file
-        self.dataset = dataset
+    def __init__(self,config):
+        self.file = config.input_file
+        self.input_name = config.input_name
+        self.input_name = config.input_name
 
     def __str__(self):
         return f"Dataset: \n{self.__dict__}"
 
     def get_data(self):
-        file_path = f"datasets/{self.dataset}/{self.file}"
+        file_path = f"datasets/{self.input_name}/{self.file}"
         fileh = tables.open_file(file_path, mode='r')
         self.units = fileh.root.spikes.units
         self.times = fileh.root.spikes.times
@@ -29,14 +31,78 @@ class Input:
         self.channels = np.max(np.concatenate(self.units))+1
         self.length = np.max(np.concatenate(self.times))
         self.classes = np.max(self.labels)
+
         return self.units, self.times, self.labels, self.channels, self.length, self.classes
+
+    def generate_data(self,config):
+        patterns = config.patterns
+        replicas = config.replicas
+        length = config.length
+        jitter = config.jitter
+        dataset = {}
+        UNITS = []
+        TIMES = []
+        labels = []
+        if patterns < 2:
+            print("### Error: Minimum of 2 input patterns required.  Try again... ###")
+            return
+        if length < 100:
+            print("### Error: Minimum of 100ms simulation length required.  Try again... ###")
+            return
+        classes = []
+        for letter in range(patterns):
+            if patterns < 27:
+                let = string.ascii_letters[letter+26]
+                classes.append(let)
+                for r in range(replicas):
+                    dataset[let] = []
+            else:
+                classes.append(f"pattern_{letter}")
+                for r in range(replicas):
+                    dataset[str(letter)+"_"+str(r)] = []
+
+
+        print(f"Pattern classes = {classes}\n")
+        pattern_dataset = {}
+        rates_dict = {}
+        count = 0
+        for pattern in classes:
+            print("Pattern: ", pattern)
+            pattern_dataset[pattern] = []
+            rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low, config.rate_high, config.length)
+            rates_dict[pattern] = rand_rates
+            for r in range(replicas):
+                print(" Replica: ", r)
+                jittered = create_jitter(jitter,times)
+                zipped = np.array(list(zip(indices,np.round(jittered*1000,8))))
+                pattern_dataset[pattern].append(zipped)
+                UNITS.append(indices)
+                TIMES.append(np.round(jittered,8))
+                labels.append(pattern+str(r))
+                dataset[pattern].append(count)
+                count+=1
+
+        class_length = len(pattern_dataset)
+        rep_len = len(pattern_dataset[classes[0]])
+        spike_len = len(pattern_dataset[classes[0]][0][:,1])
+        print(f"Poisson pattern dataset generated, with size: ({class_length}, {rep_len}, {spike_len})")
+        self.units = UNITS
+        self.times = TIMES
+        self.labels = labels
+        self.channels = config.channels
+        self.length = config.length
+        self.classes = config.patterns
+        self.dataset = dataset
+        return dataset
+
+
 
     def describe(self):
         string = f"""Dataset description:
         Dataset = {self.dataset}
         Subset = {self.file} 
         Examples = {len(self.labels)}
-        Units = {self.channels}
+        Channels = {self.channels}
         Time length = {self.length} seconds
         Disctinct labels = {self.classes}
         """
@@ -53,7 +119,6 @@ class Input:
     def save_data(self,location):
         for k,v in self.dataset.items():
             for i,rep in enumerate(v):
-                print(i)
                 input_units = self.units[rep]
                 input_times = self.times[rep]
                 loc = f'{location}/inputs'
@@ -66,7 +131,7 @@ class LiquidState():
     # intitializing generic *instance* attributes with parameter names
     def __init__(self, config): #N,T,learning,topology,input_sparsity,res_sparsity,refractory,delay):
         self.N = config.neurons
-        #self.T = config.length
+        self.T = config.length
         self.learning = config.learning
         self.topology = config.topology
         self.input_sparsity = config.input_sparsity
@@ -100,14 +165,21 @@ class LiquidState():
         G, S = reservoir(self)
         nets = Network(G, S)
 
-        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], inputs.times[example]*1000*ms, dt=1*us)
+        if inputs.input_name == 'Poisson':
+            timed = inputs.times[example]*ms
+        elif inputs.input_name =='Heidelberg':
+            timed = inputs.times[example]*1000*ms
+        else:
+            print("Input skipped")
+        
+        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=100*us)
         
         SP = Synapses(SGG, G, on_pre='v+=1')
         SP.connect('i!=j', p=self.input_sparsity)
         spikemon = SpikeMonitor(G)
         nets.add(SGG, SP, spikemon)
         nets.store()
-        nets.run((inputs.length)*1000*ms)
+        nets.run((self.T)*ms)
         #self.zipped = np.array(list(zip(spikemon.i,spikemon.t*1000)))
         indices = np.array(spikemon.i)
         times = np.array(spikemon.t/ms)
@@ -121,7 +193,6 @@ class LiquidState():
                 item = f'pat{k}_rep{i}'
                 print(f"\n --- Responding to pattern {k}, replica {i} --- \n")
                 loc_liq = f'{self.dir}/liquid'
-                #config='Maass_rnd=(rand0.3_geoNone_smNone)__N=64_IS=0.2_RS=0.3_ref=0.0_delay=0.0'
                 item_liq = f'{self.full_loc}_{item}'
                 result = self.simulate(inputs,rep)
                 indices = result[0]
@@ -174,7 +245,7 @@ class ReadoutMap():
         self.train_range = int(self.split*len(self.full_train)/self.len_labels)
         self.test_range = int(config.patterns*len(self.full_train)/self.len_labels)
 
-        print(self.train_range,self.test_range)
+        print('Train/test split: ',self.train_range,self.test_range)
 
         # return self.train_range, self.test_range
 

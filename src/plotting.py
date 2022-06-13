@@ -144,8 +144,11 @@ def double_raster_plot(t_1,i_1,t_2,i_2):
     plt.show()
 
 def raster_save(time,index,dirName,item):
-    plt.figure(figsize=(16, 8))
-    plt.plot(time, index, '.k')
+    plt.figure(figsize=(12, 6))
+    if len(time) > 10000:
+        plt.plot(time, index, '.k', ms=.7)
+    else:
+        plt.plot(time, index, '.k')
     plt.xlabel('Time (ms)')
     plt.ylabel('Neuron index')
 
@@ -234,14 +237,14 @@ def output_multi(configs, classes, accs):
 
 def performance(config,accs):
 
-    plt.figure(figsize=(16, 8))
+    plt.figure(figsize=(12, 6))
     plt.style.use('seaborn-muted')
-    plt.title(f"Accuracy over time\n{config.full_loc}", fontsize=22)
+    plt.title(f"Accuracy over time\n{config.full_loc}", fontsize=18)
     for i in range(len(accs)):
         plt.plot(accs[i],'--',label=config.classes[i])
     plt.plot(np.mean(accs,axis=0),linewidth=3,label="mean")
-    plt.xlabel("Time (ms), dt=1ms", fontsize=18)
-    plt.ylabel("Ratio of Correctness", fontsize=18)
+    plt.xlabel("Time (ms), dt=1ms", fontsize=16)
+    plt.ylabel("Ratio of Correctness", fontsize=16)
     plt.legend()
 
     dirName = f"results/{config.dir}/performance/plots"

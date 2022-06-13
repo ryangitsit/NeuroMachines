@@ -1,5 +1,6 @@
 from LSM import *
 from arg_parser import setup_argument_parser
+from processing import write_dict
 
 def main():
 
@@ -16,15 +17,27 @@ def main():
 
 
     ### INPUT ###
-    inputs = Input(config.input_name, config.input_file)
-    inputs.get_data()
-    inputs.describe()
-    dataset = inputs.make_dataset(config.patterns,config.replicas)
-    config.classes = list(dataset.keys())
-    print(f'Dataset Generated with {config.patterns} patterns and {config.replicas} replicas.')
-    for k,v in dataset.items():
-        print(f"  Pattern {k} at indices {v}")
+    inputs = Input(config)
 
+    if config.input_name == "Heidelberg":
+        inputs.get_data()
+        dataset = inputs.make_dataset(config.patterns,config.replicas)
+        config.classes = list(dataset.keys())
+        print(f'Dataset Generated with {config.patterns} patterns and {config.replicas} replicas.')
+        for k,v in dataset.items():
+            print(f"  Pattern {k} at indices {v}")
+
+
+    # store inputs in same dataset form as Hei, or standardize and improved method
+    elif config.input_name == "Poisson":
+        print("Poisson")
+        dataset = inputs.generate_data(config)
+        #print(dataset)
+        for k,v in dataset.items():
+            print(f"  Pattern {k} at indices {v}")
+
+
+    inputs.describe()
     if config.new_input == True:
         inputs.save_data(config.dir)
 
@@ -34,23 +47,19 @@ def main():
     liquids.describe()
     liquids.respond(inputs,dataset)
 
+
+    ### OUTPUT ###
     output = ReadoutMap(config)
     matrices, labels = output.heat_up(config)
     output.setup(config,matrices,labels)
 
     output.regress(config)
 
-    js = json.dumps(config.__dict__)
-    path = f'results/{config.dir}/configs/{config.full_loc}.json'
-    dirName= f'results/{config.dir}/configs'
-    try:
-        os.makedirs(dirName)    
-    except FileExistsError:
-        pass
-    f = open(path,"w")
-    f.write(js)
-    f.close()
 
+    # save config
+    path = f'results/{config.dir}/configs/'
+    name = f'{config.full_loc}.json'
+    write_dict(config.__dict__,path,name)
 
 
 

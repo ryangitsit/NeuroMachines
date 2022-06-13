@@ -172,8 +172,8 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
 
     return spikes, groups, exp_pcs, stacks
 
-sweep = "STSP_sweep"
-classes = ["A","B","C"]
+sweep = "sparse_sweep"
+classes=["ZERO","ONE","TWO"]
 replicas = 3
 components = 3
 moment=99
@@ -247,6 +247,7 @@ print(path_stacks[3])
 
 # sweep='full_sweep'
 # item='full_sweep_99_stacks'
+sweep= 'sparse_sweep'
 dirName = f'results/{sweep}/performance'
 item = f'{sweep}_99_stacks'
 j_stacks = read_json(dirName,item)
@@ -259,7 +260,7 @@ def mean_separation(stacks,write=True):
     - Return sorted dictionary
     """
 
-    classes=["A","B","C"]
+    classes=["ZERO","ONE","TWO"]
     replicas = 3
     separation = {}
 
@@ -344,14 +345,15 @@ def ranking_comparison(dict1,dict2):
     J = []
     for i, (k1,v1) in enumerate(dict1.items()):
         for j, (k2,v2) in enumerate(dict2.items()):
-            if k1 == k2:
+            if k1[:-2] == k2:
                 I.append(i)
                 J.append(j)
-                #print(i,j)
+            print(k1,k2)
     return I,J
 
 I,J = ranking_comparison(ranked_separation, ranked_performance)
 
+print(I,J)
 #%%
 
 # from matplotlib import cm
@@ -388,7 +390,8 @@ ranking_comparison_plot(I,J)
 
 def pc_plotting(pcs):
 
-    classes=["A","B","C"]
+    # classes=["A","B","C"]
+    classes=["ZERO","ONE","TWO"]
     replicas = 3
 
     fig = plt.figure()
@@ -457,7 +460,8 @@ plt.show()
 
 def path_plotting(path_stacks):
 
-    classes=["A","B","C"]
+    # classes=["A","B","C"]
+    classes=["ZERO","ONE","TWO"]
     replicas = 3
 
     fig = plt.figure()

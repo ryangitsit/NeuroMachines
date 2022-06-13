@@ -36,10 +36,10 @@ def gen_small_world(S,N,beta,res_sparsity):
     sm_i = []
     sm_j = []
 
-    for i in range(len(sm)):
-        for j in sm[i]:
-            sm_i.append(i)
-            sm_j.append(j)
+    for n_i in range(len(sm)):
+        for n_j in sm[n_i]:
+            sm_i.append(n_i)
+            sm_j.append(n_j)
     # Sparsity !!
     for ind in range(len(sm_i)):
         eye = sm_i[ind]
