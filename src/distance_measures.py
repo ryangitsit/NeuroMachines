@@ -1,11 +1,11 @@
 #%%
-from liquid_object_test import LiquidState
+# from liquid_object_test import LiquidState
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance
 from scipy.linalg import norm
 from processing import read_in_ranks
-
+import itertools
 
 from processing import read_in_ranks, txt_to_spks, one_hot
 #%%
@@ -16,18 +16,18 @@ def get_input(sweep,classes,replicas,N,T):
     for pattern in classes:
         for rep in range(replicas):
 
-            location = f"results/{sweep}/inputs/spikes/pattern{pattern}_rep{rep}.txt"
+            location = f"results/{sweep}/inputs/spikes/pat{pattern}_rep{rep}.txt"
             dat,indices,times = txt_to_spks(location)
             hot_matrix = one_hot(N,T,indices,times)
             encoded_inputs[f"{pattern}-{rep}"] = hot_matrix
 
     return encoded_inputs
 
-sweep = 'sparse_sweep'
-classes = ["ZERO", "ONE", "TWO"]
+sweep = 'poisson'
+classes = ["A","B","C"]
 replicas = 3
-N = 100
-T = 700
+N = 64
+T = 100
 inputs = get_input(sweep, classes, replicas, N, T)
 
 #%%
@@ -41,7 +41,7 @@ inputs = get_input(sweep, classes, replicas, N, T)
 # clusts = km.fit_predict(input_vectors)
 # centers = km.cluster_centers_
 # print(clusts)
-#if len(set(clusts[:3]))==1 and len(set(clusts[3:6]))==1 and len(set(clusts[6:9]))==1:
+# if len(set(clusts[:3]))==1 and len(set(clusts[3:6]))==1 and len(set(clusts[6:9]))==1:
 
 #%%
 
@@ -180,10 +180,6 @@ def grouped_distance_measure(inputs,classes,replicas,time):
 
 g_e,g_f,between = grouped_distance_measure(inputs,classes,3,100)
 
-#%%
-
-print(g_e['A0-A1'])
-print(between)
 
 
 #%%
@@ -195,7 +191,7 @@ def total_distance_loop(sweep,classes,replicas,N,T):
     grp_EUC = []
     BET = []
 
-    perf_rankings = read_in_ranks(sweep,'full_sweep-rankings')
+    perf_rankings = read_in_ranks(sweep,f'{sweep}-rankings')
     # perf_rankings = read_in_ranks(sweep,'full_sweep-separation_rankings')
 
     for k in perf_rankings.keys():
@@ -216,10 +212,6 @@ def total_distance_loop(sweep,classes,replicas,N,T):
 
     return tot_EUC, grp_EUC, BET
 
-sweep = 'full_sweep'
-N = 100
-T = 100
-classes = ["A","B","C"]
 
 # ham_in, euc_in, fro_in = distance_measure(inputs,classes)
 tot_EUC, grp_EUC, BET = total_distance_loop(sweep,classes,replicas,N,T)
@@ -235,21 +227,16 @@ with open(f'results/{sweep}/analysis/frobenius_total_dist.txt', 'w') as fp:
 #%%
 plt.figure(figsize=(16,8))
 
-plt.plot(tot_EUC,label='total euclidean')
-# plt.plot(grp_EUC,label='grouped euclidean')
-# plt.plot(BET,label='between euclidean')
-##plt.plot((np.array(tot_EUC)/np.array(grp_EUC))[:390],label='total/grouped')
-# plt.plot(np.array(tot_EUC)/np.array(BET),label='total/grouped')
-# plt.plot(np.array(grp_EUC)/np.array(BET),label='total/grouped')
+#plt.plot(tot_EUC,label='total euclidean')
+#plt.plot(grp_EUC,label='grouped euclidean')
+#plt.plot(BET,label='between euclidean')
+#plt.plot((np.array(tot_EUC)/np.array(grp_EUC))[:390],label='total/grouped')
+#plt.plot(np.array(tot_EUC)/np.array(BET),label='total/between')
+
+plt.plot(np.array(grp_EUC)/np.array(BET),label='group/between')
 
 plt.legend()
 #print(EUCS)
-
-#%%
-plt.figure(figsize=(16,8))
-plt.plot(g_FROS,label='frobenius')
-plt.plot(g_EUCS,label='euclidean')
-plt.legend()
 
 """
 Try comparing variance of groups against total variance
@@ -260,11 +247,11 @@ Try comparing ordered pair wise distances of with opw of states
 
 #%%
 
-rankings = read_in_ranks(sweep,'full_sweep-rankings')
+rankings = read_in_ranks(sweep,f'{sweep}-rankings')
 
 separation_ratio = {}
 for i,(k,v) in enumerate(rankings.items()):
-    separation_ratio[k] = tot_EUC[i]
+    separation_ratio[k] = tot_EUC[i]/BET[i]
 
 sep_rank = dict(sorted(separation_ratio.items(), key=lambda item: item[1],reverse=True))
 
@@ -279,12 +266,13 @@ features = {
     'Maass':0,
     'STDP':0,
     'STSP':0,
+    'LSTP':0,
     'rnd=':0,
     'geo=':0,
     'smw':0,
-    'RS=0.15':0,
-    'RS=0.3':0,
-    'RS=0.45':0,
+    'RS=0.01':0,
+    'RS=0.05':0,
+    'RS=0.1':0,
     'delay=0.0':0,
     'delay=1.5':0,
     'delay=3.0':0,
@@ -300,6 +288,10 @@ features = {
     'STSP_rnd=':0,
     'STSP_geo=':0,
     'STSP_smw=':0,
+
+    'LSTP_rnd=':0,
+    'LSTP_geo=':0,
+    'LSTP_smw=':0,
     
     'sm0.0':0,
     'sm0.25':0,
@@ -311,18 +303,13 @@ features = {
 
 }
 
-lim = 100
+lim = 50
 feat = ranking_analysis(sep_rank,features,lim)
 
 keys_list = list(feat)
-
-keys = keys_list[12:21]
+keys = keys_list[13:25]
 
 hist_ranked(keys,feat)
-
-
-
-#%%
 
 
 """
@@ -331,14 +318,6 @@ hist_ranked(keys,feat)
  - With performance
  - What are the significance of STSP and STDP-smw here?
 """
-
-
-
-print(np.log(0.01))
-
-
-
-
 
 
 

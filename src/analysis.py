@@ -4,13 +4,14 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from plotting import *
+
 from processing import txt_to_spks
 from plotting import raster_plot
 import json
 
 
 """"
-Simply set the location of the accufracies folder for a sweep on line 36
+Simply set the location of the accuracies folder for a sweep on line 36
 and run this file.  The output will be a ranked list of configurations
 ordered by average accuracy for all classes at the final moment of each
 simulation.
@@ -49,7 +50,7 @@ def performance_pull(sweep):
 
     return all_accs
 
-sweep  = 'dense_sweep'
+sweep  = 'poisson'
 all_accs = performance_pull(sweep)
 
 #%%
@@ -163,7 +164,7 @@ def top_plot(names,sweep,save):
     plt.title("Title")
     patterns=["A","B","C"]
 
-    top_5 = names[:5]
+    top_5 = names[5:10]
     print(top_5)
     for i,pattern in enumerate(patterns):
         suffix = "_pat"+pattern+"_rep0.txt"

@@ -5,11 +5,9 @@ import tables
 import os
 from sklearn.linear_model import LogisticRegression
 import string
-
 from processing import *
-from pop_generators import reservoir
+from reservoirs import reservoir
 from poisson_generator import gen_poisson_pattern,create_jitter
-
 from plotting import performance, raster_save
 
 
@@ -23,16 +21,40 @@ class Input:
         return f"Dataset: \n{self.__dict__}"
 
     def get_data(self):
-        file_path = f"datasets/{self.input_name}/{self.file}"
-        fileh = tables.open_file(file_path, mode='r')
-        self.units = fileh.root.spikes.units
-        self.times = fileh.root.spikes.times
-        self.labels = fileh.root.labels
-        self.channels = np.max(np.concatenate(self.units))+1
-        self.length = np.max(np.concatenate(self.times))
-        self.classes = np.max(self.labels)
+        if self.input_name == "Heidelberg":
+            file_path = f"datasets/{self.input_name}/{self.file}"
+            fileh = tables.open_file(file_path, mode='r')
+            self.units = fileh.root.spikes.units
+            self.times = fileh.root.spikes.times
+            self.labels = fileh.root.labels
+            self.channels = np.max(np.concatenate(self.units))+1
+            self.length = np.max(np.concatenate(self.times))
+            self.classes = np.max(self.labels)
 
-        return self.units, self.times, self.labels, self.channels, self.length, self.classes
+    def read_data(self,config):
+        dataset = {}
+        count = 0
+        UNITS = []
+        TIMES = []
+        labels = []
+        for pattern in config.classes:
+            dataset[pattern] = []
+            for rep in range(config.replicas):
+                location = f"results/{config.dir}/inputs/spikes/pat{pattern}_rep{rep}.txt"
+                dat,indices,times = txt_to_spks(location)
+                UNITS.append(indices)
+                TIMES.append(times)
+                labels.append(pattern)
+                dataset[pattern].append(count)
+                count+=1
+        self.units = UNITS
+        self.times = TIMES
+        self.labels = labels
+        self.channels = config.channels
+        self.length = config.length
+        self.classes = config.patterns
+        self.dataset = dataset
+        return self.dataset
 
     def generate_data(self,config):
         patterns = config.patterns
@@ -95,8 +117,6 @@ class Input:
         self.dataset = dataset
         return dataset
 
-
-
     def describe(self):
         string = f"""Dataset description:
         Dataset = {self.dataset}
@@ -126,7 +146,7 @@ class Input:
                 save_spikes(self.channels,self.length,input_times,input_units,loc,item)
 
 
-# class
+
 class LiquidState():
     # intitializing generic *instance* attributes with parameter names
     def __init__(self, config): #N,T,learning,topology,input_sparsity,res_sparsity,refractory,delay):
@@ -143,10 +163,8 @@ class LiquidState():
         self.delay = config.delay
         self.full_loc = config.full_loc
         self.dir = config.dir
+        self.STSP_U = config.STSP_U
 
-
-
-    # method for describing attributs of LiquidState
     def __str__(self):
         return f"Liquid attributes: \n{self.__dict__.keys()}"
     
@@ -155,8 +173,6 @@ class LiquidState():
         for k in self.__dict__.keys():
             print(f"  {k} = {self.__dict__[k]}")
         print("-----------------\n")
-
-    # def generate_reservoir(self):
 
     def simulate(self,inputs,example):
 
@@ -172,7 +188,7 @@ class LiquidState():
         else:
             print("Input skipped")
         
-        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=100*us)
+        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=1*us)
         
         SP = Synapses(SGG, G, on_pre='v+=1')
         SP.connect('i!=j', p=self.input_sparsity)
@@ -180,7 +196,6 @@ class LiquidState():
         nets.add(SGG, SP, spikemon)
         nets.store()
         nets.run((self.T)*ms)
-        #self.zipped = np.array(list(zip(spikemon.i,spikemon.t*1000)))
         indices = np.array(spikemon.i)
         times = np.array(spikemon.t/ms)
         #nets.restore()
@@ -208,6 +223,7 @@ class ReadoutMap():
 
     def heat_up(self,config):
         # location, pat, rep, config
+        print("One-hot encoding liquid state data...")
         mats = []
         labels=[]
 
@@ -240,7 +256,7 @@ class ReadoutMap():
         self.len_labels = len(self.labels)
         self.split = config.patterns*config.replicas - config.patterns #*int(tests)
 
-        print(f"  Number of examples: {len(self.labels)}\n  Distinct patterns: {config.patterns}")
+        print(f"  Number of 1ms time slice states: {len(self.labels)}\n  Distinct patterns: {config.patterns}")
 
         self.train_range = int(self.split*len(self.full_train)/self.len_labels)
         self.test_range = int(config.patterns*len(self.full_train)/self.len_labels)
@@ -251,51 +267,67 @@ class ReadoutMap():
 
     def regress(self,config):
 
+        # Fit liquid states to labels for training range
+        print("Fitting regression model...")
         logisticRegr = LogisticRegression(max_iter=500)
         logisticRegr.fit(self.full_train[:self.train_range],self.full_labels[:self.train_range])
 
+        # Make predictions on unseen data for testing range
+        print("Making predictions...")
         predictions = []
+        
+        
+        clean_accs = [[] for _ in range(config.patterns)]
+        clean_success = np.zeros((config.patterns,1))
+        classes = config.classes
+        
         for i in range(self.split,self.len_labels):
+            count = 0
+            success = 0
             for j in range(config.length):
+                count +=1
                 prediction = logisticRegr.predict(np.transpose(self.mats[i])[j].reshape(1, -1))
                 predictions.append(prediction[0])
 
+                # new acc method
+                lab_index = i%3
+                pred_index = classes.index(prediction[0])
+                clean_success[pred_index] +=1
+                if pred_index == lab_index:
+                    success += 1
+                clean_accs[lab_index].append(float(success/count))
 
-        runs = np.zeros((config.patterns,config.patterns))
-        accs = []
+            #     print(lab_index,pred_index,success,count,success/count)
+            # print(clean_accs[lab_index])
 
+        # # Check prediction performance against correct labels
+        # runs = np.zeros((config.patterns,config.patterns))
+        # accs = []
+        # for lab in range(config.patterns):
+        #     accs.append([])
+        #     start=config.length*lab
+        #     stop=config.length*(lab+1)
+        #     succ=0
+        #     for i in range(start, stop):
+        #         for p in range(config.patterns):
+        #             if predictions[i]==config.classes[p]:
+        #                 runs[lab][p] += 1
+        #         if np.argmax(runs[lab][:])==lab and i>1:
+        #             if i>1 and i!=start:
+        #                 succ+=1            
+        #         if i!=start:
+        #             accs[lab].append((succ/(i-start)))
 
-        for lab in range(config.patterns):
-            accs.append([])
-            start=config.length*lab
-            stop=config.length*(lab+1)
-            succ=0
-
-            for i in range(start, stop):
-                for p in range(config.patterns):
-                    if predictions[i]==config.classes[p]:
-                        runs[lab][p] += 1
-                
-                if np.argmax(runs[lab][:])==lab and i>1:
-                    if i>1 and i!=start:
-                        succ+=1
-            
-                if i!=start:
-                    accs[lab].append((succ/(i-start)))
-
-        accs_array = []
-        for acc in accs:
-            accs_array.append(acc)
-        accs_array = np.array(accs_array)
-
+        accs_array = np.array(clean_accs)
         performance(config,accs_array)
 
-
+        # Store accuracies
         dirName = f"results/{config.dir}/performance/accuracies/"
         try:
             os.makedirs(dirName)    
         except FileExistsError:
             pass
         with open(f'results/{config.dir}/performance/accuracies/{config.full_loc}.npy', 'wb') as f:
-            np.save(f, np.array(accs), allow_pickle=True)
+            np.save(f, accs_array, allow_pickle=True)
 
+        print(f"***Experiment complete***\n  Config={config.full_loc}\n  Final mean accuracy:{np.mean(accs_array,axis=0)[config.length-2]}")

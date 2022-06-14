@@ -5,22 +5,22 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 
+sweep = 'poisson'
+
 ## PCs
-# type = 'PCs'
-# dirName = 'results/full_sweep/performance'
-# item='full_sweep_99_stacks'
+type = 'PCs'
+dirName = f'results/{sweep}/performance'
+item=f'{sweep}_99_stacks'
 
 ## Full Dimensionality
-type = 'groups'
-dirName = 'results/sparse_sweep/analysis'
+# type = 'groups'
+# dirName = 'results/poisson/analysis'
 #dirName = 'results/full_sweep/analysis'
-
-item = "m=99_groups"
+# item = "m=99_groups"
 
 j_stacks = read_json(dirName,item)
 
 
-sweep = 'sparse_sweep'
 write=False
 
 def cluster_check(dict,dirName,sweep,type,write):
@@ -36,7 +36,7 @@ def cluster_check(dict,dirName,sweep,type,write):
         km = KMeans(3)
         clusts = km.fit_predict(value)
         centers = km.cluster_centers_
-        #print(clusts)
+        print(clusts)
 
         if len(set(clusts[:3]))==1 and len(set(clusts[3:6]))==1 and len(set(clusts[6:9]))==1:
             #print('success')

@@ -5,9 +5,9 @@ def setup_argument_parser():
     parser = argparse.ArgumentParser()
 
     # OO implementation
-    parser.add_argument("--new_input", help = " ", type = bool, default = False)
+    parser.add_argument("--just_input", help = " ", type = bool, default = False)
     parser.add_argument("--dir", help = " ", type = str, default = "test_sweep")
-    parser.add_argument("--input_name", help = " ", type = str, default = "Heidelberg")
+    parser.add_argument("--input_name", help = " ", type = str, default = "Poisson") #""Heidelberg")
     parser.add_argument("--input_file", help = " ", type = str, default = "shd_train.h5")
     parser.add_argument("--classes", help = " ", type = str, default = ["A","B","C"])
 
@@ -28,10 +28,10 @@ def setup_argument_parser():
     parser.add_argument("--full_loc", help = " ", type = str, default=None)
 
     # liquids
-    parser.add_argument("--learning", help = " ", choices = ['Maass', 'STSP', 'STDP'], type = str, default = "STSP")
+    parser.add_argument("--learning", help = " ", choices = ['Maass', 'STSP', 'STDP','LSTP'], type = str, default = "STSP")
     parser.add_argument("--topology", help = " ", choices = ['rnd', 'geo', 'smw'], type = str, default = "rnd")
-    parser.add_argument("--input_sparsity", help = " ", type = float, default = 0.01)
-    parser.add_argument("--res_sparsity", help = " ", type = float, default = 0.05)
+    parser.add_argument("--input_sparsity", help = " ", type = float, default = 0.2) #0.01)
+    parser.add_argument("--res_sparsity", help = " ", type = float, default = 0.3) #0.025)
     parser.add_argument("--STSP_U", help = " ", type = float, default = 0.6)
 
     
@@ -42,7 +42,7 @@ def setup_argument_parser():
     parser.add_argument("--beta", help = " ", type = float, default = None)     # small-world topology
 
 
-    parser.add_argument("--neurons", help = " ", type = int, default = 100)
+    parser.add_argument("--neurons", help = " ", type = int, default = 64)
     parser.add_argument("--refractory", help = " ", type = float, default = 3.0)
     parser.add_argument("--delay", help = " ", type = float, default = 1.5)
 

@@ -172,8 +172,8 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
 
     return spikes, groups, exp_pcs, stacks
 
-sweep = "sparse_sweep"
-classes=["ZERO","ONE","TWO"]
+sweep = "poisson"
+classes=["A","B","C"]
 replicas = 3
 components = 3
 moment=99
@@ -220,10 +220,8 @@ def path_stacks(sweep,classes,replicas,m1,m2,name):
 
         # generate 3 pcs for each replica and class
         stack = pc_stack(groups)
-        #print(stack)
 
         path_stacks.append(np.array(stack).tolist())
-
 
     return path_stacks
         
@@ -232,7 +230,7 @@ replicas=3
 components=3
 m1 = 0
 m2 = 99
-name = '\STDP_geo=(randNone_geo[16, 2, 2]_smNone)__N=64_IS=0.2_RS=0.3_ref=0.0_delay=0.0'
+name = '\STSP_rnd=(rand0.45_geoNone_smNone)_N=64_IS=0.2_RS=0.45_ref=1.5_delay=0.0_U=0.6'
 
 
 path_sep_minus = path_stacks(sweep,classes,replicas,m1,m2,name)
@@ -240,14 +238,6 @@ path_sep_minus = path_stacks(sweep,classes,replicas,m1,m2,name)
 
 #%%
 
-print(path_stacks[3])
-
-#%%
-
-
-# sweep='full_sweep'
-# item='full_sweep_99_stacks'
-sweep= 'sparse_sweep'
 dirName = f'results/{sweep}/performance'
 item = f'{sweep}_99_stacks'
 j_stacks = read_json(dirName,item)
@@ -260,7 +250,7 @@ def mean_separation(stacks,write=True):
     - Return sorted dictionary
     """
 
-    classes=["ZERO","ONE","TWO"]
+    classes=["A","B","C"]
     replicas = 3
     separation = {}
 
@@ -345,7 +335,7 @@ def ranking_comparison(dict1,dict2):
     J = []
     for i, (k1,v1) in enumerate(dict1.items()):
         for j, (k2,v2) in enumerate(dict2.items()):
-            if k1[:-2] == k2:
+            if k1 == k2:
                 I.append(i)
                 J.append(j)
             print(k1,k2)
@@ -391,7 +381,7 @@ ranking_comparison_plot(I,J)
 def pc_plotting(pcs):
 
     # classes=["A","B","C"]
-    classes=["ZERO","ONE","TWO"]
+    classes=["A","B","C"]
     replicas = 3
 
     fig = plt.figure()
@@ -440,10 +430,18 @@ def unit_dict(dict,key):
             unit_dict[k] = v
     return unit_dict
 
-sing = 'STDP_smw=(randNone_geoNone_sm0.75)__N=64_IS=0.2_RS=0.3_ref=1.5_delay=1.5'
-#sing = 'Maass_smw=(randNone_geoNone_sm0.75)__N=64_IS=0.2_RS=0.3_ref=1.5_delay=1.5'
+# high sep
+sing = 'Maass_geo=(randNone_geo[16, 2, 2]_smNone)_N=64_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6'
+# low sep
+
+# high perf
+#sing = 'Maass_rnd=(rand0.3_geoNone_smNone)_N=64_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6'
+# low perf
+
 single = unit_dict(j_stacks,sing)
 pc_plotting(single)
+
+
 #%%
 a = [3,8,12]
 plt.hlines(1,1,20, 'k')  # Draw a horizontal line
@@ -461,7 +459,7 @@ plt.show()
 def path_plotting(path_stacks):
 
     # classes=["A","B","C"]
-    classes=["ZERO","ONE","TWO"]
+    classes=["A","B","C"]
     replicas = 3
 
     fig = plt.figure()

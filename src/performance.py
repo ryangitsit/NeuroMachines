@@ -9,7 +9,7 @@ from processing import read_in_ranks, print_rankings
 # sweep = 'full_sweep'
 # ranked = read_in_ranks(sweep,'full_sweep-rankings')
 
-sweep = 'sparse_sweep'
+sweep = 'poisson'
 ranked = read_in_ranks(sweep,f'{sweep}-rankings')
 #print_rankings(ranked,"Performance",100)
 
@@ -30,6 +30,7 @@ features = {
     'Maass':0,
     'STDP':0,
     'STSP':0,
+    'LSTP':0,
     'rnd=':0,
     'geo=':0,
     'smw':0,
@@ -51,6 +52,10 @@ features = {
     'STSP_rnd=':0,
     'STSP_geo=':0,
     'STSP_smw=':0,
+
+    'LSTP_rnd=':0,
+    'LSTP_geo=':0,
+    'LSTP_smw=':0,
     
     'sm0.0':0,
     'sm0.25':0,
@@ -62,37 +67,33 @@ features = {
 
 }
 
-lim = 20
+lim = 50
 feat = ranking_analysis(ranked,features,lim)
 
 
-
 #%%
-
-
 keys_list = list(feat)
-
-keys = keys_list[12:21]
-
+keys = keys_list[13:25]
+print(keys)
 #%%
-
 def hist_ranked(keys,feat):
-    labels = ['Maass', 'STDP','STSP']
+    labels = ['Maass', 'STDP','STSP','LSTP']
 
     RND=[]
     GEO=[]
     SMW=[]
-    for i in range(3):
+    for i in range(4):
         RND.append(feat[keys[3*i]]/100)
         GEO.append(feat[keys[3*i+1]]/100)
-        SMW.append(feat[keys[3*i+2]]*.75/100)
+        SMW.append(feat[keys[3*i+2]]/100)
 
-
+    print(GEO)
     #%%
-    x = np.arange(len(labels))  # the label locations
-    print(x)
-    x= np.array([0.5,1,1.5])
-    width = 0.1  # the width of the bars
+    x = np.arange(len(labels)) 
+    # print(x)
+    # x= np.array([0.5,1,1.5])
+
+    width = 0.18  
 
     #fig, plt = plt.subplots()
     plt.figure(figsize=(7,7))

@@ -1,12 +1,12 @@
-# from brian2 import *
-# from brian2.equations import refractory
-# import pyspike as spk
 import numpy as np
-#from plotting import raster_plot
 import os
 import json
-from plotting import raster_save
+from plotting import raster_run_input, raster_save
 
+
+
+
+##################### Spike Processing Functions #######################
 
 def spks_to_txt(N,indices,times,prec,name):
     with open(f'{name}.txt', 'w') as f:
@@ -153,6 +153,8 @@ def group(mats,labels,time):
 
 
 
+####################### Bureaucratic Functions #########################
+
 def read_in_ranks(sweep,item):
     """
     Read in performance rankings from stored dictionary
@@ -213,17 +215,11 @@ def save_spikes(N,T,times,indices,location,item):
         os.makedirs(dirName2)    
     except FileExistsError:
         pass
+    # if N < 100 and "inputs" in location:
+    #     raster_run_input(times,indices,dirName2,item)
+    # else:
     raster_save(times,indices,dirName2,item)
 
-
-###################### Misncelleneous ########################
-
-def dic_to_vars(dic):
-    print("### Paramater Settings ###")
-    for key, value in dic.items():
-        str = key
-        globals()[str] = value
-        print(f"{str} = {value}")
 
 def billboard(word):
     print("\n\n")
@@ -246,42 +242,3 @@ def unit_dict(dict,key):
         if k == key:
             unit_dict[k] = v
     return unit_dict
-
-
-
-## Legacy
-# def make_sets(N,patterns,replicas,rule,top,ref,delay,location,plotting):
-#     IND = []
-#     TIM = []
-#     mats = []
-#     labels=[]
-#     refs = [True, False]
-#     delays = [True, False]
-
-#     # for ref in refs:
-#     #     for delay in delays:
-#     for rep in range(replicas):
-#         for pattern in patterns:
-#             dat,indices,times = txt_to_spks(f"{location}/{rule}_{top}_ref={ref}_delay={delay}_pat{pattern}_rep{rep}.txt")
-#             IND.append(array(indices)[:])
-#             TIM.append(times[:])
-#             if plotting:
-#                 raster_plot(times[:]*ms,array(indices)[:])
-#             mats.append(one_hot(135,500,array(indices)[:],times[:]))
-#             #print(one_hot(135,array(indices)[:],times[:]).shape)
-#             labels.append(pattern)
-
-#     for t in range(len(TIM)):
-#         TIM[t] += 500*t
-
-#     multi_indices = np.concatenate(IND)
-#     multi_times = np.concatenate(TIM)
-#     print(f'''
-#     Spike times and indices imported
-#     Folder: {location}
-#     Patterns: {patterns}
-#     Replicas: {replicas}
-#     Length: {len(multi_times)}
-#     ''')
-
-#     return multi_indices, multi_times, mats, labels
