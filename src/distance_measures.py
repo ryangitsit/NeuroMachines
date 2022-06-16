@@ -6,7 +6,7 @@ from scipy.spatial import distance
 from scipy.linalg import norm
 from processing import read_in_ranks
 import itertools
-
+from sklearn.cluster import KMeans
 from processing import read_in_ranks, txt_to_spks, one_hot
 #%%
 
@@ -23,24 +23,24 @@ def get_input(sweep,classes,replicas,N,T):
 
     return encoded_inputs
 
-sweep = 'poisson'
+sweep = 'new_sweep'
 classes = ["A","B","C"]
 replicas = 3
-N = 64
+N = 100
 T = 100
 inputs = get_input(sweep, classes, replicas, N, T)
 
 #%%
 
-# input_vectors=[]
-# for pattern in classes:
-#     for rep in range(replicas):
-#         input_vectors.append(np.concatenate(inputs[f"{pattern}-{rep}"]))
+input_vectors=[]
+for pattern in classes:
+    for rep in range(replicas):
+        input_vectors.append(np.concatenate(inputs[f"{pattern}-{rep}"]))
 
-# km = KMeans(3)
-# clusts = km.fit_predict(input_vectors)
-# centers = km.cluster_centers_
-# print(clusts)
+km = KMeans(3)
+clusts = km.fit_predict(input_vectors)
+centers = km.cluster_centers_
+print(clusts)
 # if len(set(clusts[:3]))==1 and len(set(clusts[3:6]))==1 and len(set(clusts[6:9]))==1:
 
 #%%

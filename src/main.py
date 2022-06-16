@@ -1,6 +1,7 @@
 from LSM import *
 from arg_parser import setup_argument_parser
 from processing import write_dict
+import pickle
 
 def main():
 
@@ -14,6 +15,15 @@ def main():
     for k,v in (config.__dict__).items():
         print(f"  {k}: {v}")
     print("\n")
+
+    path = f'results/{config.dir}/configs/'
+    name = f'{config.full_loc}.json'
+    write_dict(config.__dict__,path,name)
+
+    pick = f'{path}{name[:-5]}.pickle'
+    filehandler = open(pick, 'wb') 
+    pickle.dump(config, filehandler)
+    filehandler.close()
 
 
     ### INPUT ###
@@ -43,15 +53,12 @@ def main():
         for k,v in dataset.items():
             print(f"  Pattern {k} at indices {v}")
         inputs.describe()
-        
+
         ### RESERVOIR ###
         liquids = LiquidState(config)
         liquids.describe()
         liquids.respond(inputs,dataset)
 
-
-        from LSM import ReadoutMap
-        
         ### OUTPUT ###
         output = ReadoutMap(config)
         matrices, labels = output.heat_up(config)
@@ -62,6 +69,11 @@ def main():
         path = f'results/{config.dir}/configs/'
         name = f'{config.full_loc}.json'
         write_dict(config.__dict__,path,name)
+
+        pick = f'{path}{name[:-5]}.pickle'
+        filehandler = open(pick, 'wb') 
+        pickle.dump(config, filehandler)
+        filehandler.close()
 
 
 

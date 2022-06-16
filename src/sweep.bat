@@ -32,25 +32,24 @@ ECHO OFF
 @REM     )
 @REM )
 
-py -3.8 main.py --just_input True --length 100 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir poisson
+py -3.8 main.py --just_input True --length 100 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir winner_sweep
 
 FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
-    FOR %%y IN (0, 1.5) DO (
-        FOR %%x IN (0.0, 1.5) DO (
-            FOR %%w IN (64) DO (
-                FOR %%v IN (.15, 0.3, .45) DO (
-                    py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir poisson --length 100 --input_name "Poisson"
+    FOR %%y IN (0, 1.5, 3) DO (
+        FOR %%x IN (0.0, 1.5, 3) DO (
+            FOR %%w IN (125) DO (
+                FOR %%v IN (.2, 0.3, .4) DO (
+                    py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir winner_sweep --length 100 --input_name "Poisson"
                 )
                 FOR %%u IN (0.0, .33, .66) DO (
-                    py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir poisson --length 100 --input_name "Poisson"
+                    py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir winner_sweep --length 100 --input_name "Poisson"
                 )
-                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 4 4 4 --topology geo  --dir poisson --length 100 --input_name "Poisson"
-                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 8 4 2 --topology geo  --dir poisson --length 100 --input_name "Poisson"
-                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 16 2 2 --topology geo  --dir poisson --length 100 --input_name "Poisson"
+                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 5 5 5 --topology geo  --dir winner_sweep --length 100 --input_name "Poisson"
+                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 25 5 1 --topology geo  --dir winner_sweep --length 100 --input_name "Poisson"
+                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 125 1 1 --topology geo  --dir winner_sweep --length 100 --input_name "Poisson"
             )
         )
     )
 )
-
 
 PAUSE

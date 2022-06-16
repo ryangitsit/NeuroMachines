@@ -9,7 +9,15 @@ from processing import *
 from reservoirs import reservoir
 from poisson_generator import gen_poisson_pattern,create_jitter
 from plotting import performance, raster_save
+import pickle
 
+# #pick = 'results/scale_testing/configs/Maass_rnd=(randNone_geoNone_smNone)_N=100_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6.pickle'
+# pick = 'results/scale_testing/configs/Maass_rnd=(rand0.01_geoNone_smNone)_N=100_IS=0.05_RS=0.01_ref=0.0_delay=0.0_U=0.6.pickle'
+# file_to_read = open(pick, "rb")
+# config = pickle.load(file_to_read)
+# file_to_read.close()
+
+# print(config.__dict__)
 
 class Input:
     def __init__(self,config):
@@ -145,7 +153,12 @@ class Input:
                 item = f'pat{k}_rep{i}'
                 save_spikes(self.channels,self.length,input_times,input_units,loc,item)
 
-
+# inputs = Input(config)
+# dataset = inputs.read_data(config)
+# print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
+# for k,v in dataset.items():
+#     print(f"  Pattern {k} at indices {v}")
+# inputs.describe()
 
 class LiquidState():
     # intitializing generic *instance* attributes with parameter names
@@ -215,6 +228,11 @@ class LiquidState():
                 save_spikes(self.N,inputs.length,times,indices,loc_liq,item_liq)
 
 
+# liquids = LiquidState(config)
+# liquids.describe()
+# liquids.respond(inputs,dataset)
+
+
 
 class ReadoutMap():
     def __init__(self,config):
@@ -262,25 +280,91 @@ class ReadoutMap():
         self.test_range = int(config.patterns*len(self.full_train)/self.len_labels)
 
         print('Train/test split: ',self.train_range,self.test_range)
+    
 
         # return self.train_range, self.test_range
 
     def regress(self,config):
 
-        # Fit liquid states to labels for training range
+        training = self.full_train[:self.train_range]
+        target = self.full_labels[:self.train_range]
+        testing = self.full_train[self.train_range:]
+        test_target = self.full_labels[self.train_range:]
+        chunk = 1
+
+        ########################################  
+                    # CHUNKING #    
+        ########################################      
+        # chunk_size = 10
+        # train_chunks = []
+        # target_chunks = []
+        # count = 0
+        # for slice in range(int(len(training)/chunk_size)):
+        #     chunk = []
+        #     for c in range(chunk_size):
+        #         chunk.append(training[count])
+        #         count+=1
+        #     train_chunks.append(array(np.concatenate(np.array(chunk))))
+        #     target_chunks.append(target[count-1])
+
+        # training = train_chunks
+        # target = target_chunks
+
+        # test_chunks = []
+        # test_target_chunks = []
+        # count = 0
+        # for slice in range(int(len(testing)/chunk_size)):
+        #     chunk = []
+        #     for c in range(chunk_size):
+        #         chunk.append(testing[count])
+        #         count+=1
+        #     test_chunks.append(array(np.concatenate(np.array(chunk))))
+        #     test_target_chunks.append(test_target[count-1])
+
+        # testing = np.array(test_chunks)
+        # test_target = test_target_chunks
+        ########################################      
+        ########################################  
+
+        # # Fit liquid states to labels for training range
         print("Fitting regression model...")
         logisticRegr = LogisticRegression(max_iter=500)
-        logisticRegr.fit(self.full_train[:self.train_range],self.full_labels[:self.train_range])
+        logisticRegr.fit(training, target)
 
-        # Make predictions on unseen data for testing range
-        print("Making predictions...")
-        predictions = []
+        predictions=[]
+        for i in range(len(testing)):
+            prediction = logisticRegr.predict(testing[i].reshape(1, -1))
+            predictions.append(prediction[0])
+        print(predictions)
+
+        # certainties = [[] for _ in range(config.patterns)]
+        # pre_labs = np.zeros((config.patterns,config.patterns))
+        # count = 0
+
+        
+        # for i,pat in enumerate(config.classes):
+        #     hit = 0
+        #     run = []
+        #     for j in range(int(config.length/chunk)):
+        #         run.append(predictions[count])
+        #         pred_index = config.classes.index(predictions[count])
+        #         pre_labs[i][pred_index] += 1
+        #         if max(set(run), key = run.count) == pat:
+        #             hit+=1
+        #         certainties[i].append(hit/(j+1))
+        #         count+=1
+        #     print(f"{pat}: {hit/(j+1)}")
+        # print(pre_labs)
+        # # Make predictions on unseen data for testing range
+        # print("Making predictions...")
+        # predictions = []
         
         
-        clean_accs = [[] for _ in range(config.patterns)]
-        clean_success = np.zeros((config.patterns,1))
-        classes = config.classes
+        # clean_accs = [[] for _ in range(config.patterns)]
+        # clean_success = np.zeros((config.patterns,1))
+        # classes = config.classes
         
+        """
         for i in range(self.split,self.len_labels):
             count = 0
             success = 0
@@ -296,30 +380,53 @@ class ReadoutMap():
                 if pred_index == lab_index:
                     success += 1
                 clean_accs[lab_index].append(float(success/count))
+        """
+        # for i in range(self.split,self.len_labels):
+        #     count = 0
+        #     success = 0
+        #     for j in range(config.length):
+        #         count +=1
+        #         prediction = logisticRegr.predict(np.transpose(self.mats[i])[j].reshape(1, -1))
+        #         predictions.append(prediction[0])
 
-            #     print(lab_index,pred_index,success,count,success/count)
-            # print(clean_accs[lab_index])
+        #         # new acc method
+        #         lab_index = i%3
+        #         pred_index = classes.index(prediction[0])
+        #         clean_success[pred_index] +=1
+        #         if pred_index == lab_index:
+        #             success += 1
+        #         clean_accs[lab_index].append(float(success/count))
 
-        # # Check prediction performance against correct labels
-        # runs = np.zeros((config.patterns,config.patterns))
-        # accs = []
-        # for lab in range(config.patterns):
-        #     accs.append([])
-        #     start=config.length*lab
-        #     stop=config.length*(lab+1)
-        #     succ=0
-        #     for i in range(start, stop):
-        #         for p in range(config.patterns):
-        #             if predictions[i]==config.classes[p]:
-        #                 runs[lab][p] += 1
-        #         if np.argmax(runs[lab][:])==lab and i>1:
-        #             if i>1 and i!=start:
-        #                 succ+=1            
-        #         if i!=start:
-        #             accs[lab].append((succ/(i-start)))
+        # for chunk in range(len(testing)):
+        #     prediction = logisticRegr.predict(testing[chunk])
+        #     predictions.append(prediction[0])
+        # print(predictions)
 
-        accs_array = np.array(clean_accs)
-        performance(config,accs_array)
+
+        # Check prediction performance against correct labels
+        runs = np.zeros((config.patterns,config.patterns))
+        accs = []
+        for lab in range(config.patterns):
+            accs.append([])
+            start=config.length*lab
+            stop=config.length*(lab+1)
+            succ=0
+            for i in range(start, stop):
+                for p in range(config.patterns):
+                    if predictions[i]==config.classes[p]:
+                        runs[lab][p] += 1
+                if np.argmax(runs[lab][:])==lab and i>1:
+                    if i>1 and i!=start:
+                        succ+=1            
+                if i!=start:
+                    accs[lab].append((succ/(i-start)))
+
+        accs_array = np.array(accs)
+
+        # accs_array = np.array(certainties)
+        #print(accs_array)
+        final_mean = np.round(np.mean(accs_array,axis=0)[-1],2)
+        performance(config,accs_array,final_mean)
 
         # Store accuracies
         dirName = f"results/{config.dir}/performance/accuracies/"
@@ -330,4 +437,11 @@ class ReadoutMap():
         with open(f'results/{config.dir}/performance/accuracies/{config.full_loc}.npy', 'wb') as f:
             np.save(f, accs_array, allow_pickle=True)
 
-        print(f"***Experiment complete***\n  Config={config.full_loc}\n  Final mean accuracy:{np.mean(accs_array,axis=0)[config.length-2]}")
+        print(f"***Experiment complete***\n  Config={config.full_loc}\n  Final mean accuracy:{final_mean}")
+
+
+## For Debugging, ignore
+# output = ReadoutMap(config)
+# matrices, labels = output.heat_up(config)
+# output.setup(config,matrices,labels)
+# output.regress(config)

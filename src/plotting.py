@@ -47,15 +47,15 @@ def raster_run_input(time,index,dirName,item):
     plt.close()    
 
 
-def performance(config,accs):
+def performance(config,accs_array,final_mean):
     plt.figure(figsize=(14, 8))
     plt.style.use('seaborn-muted')
-    plt.title(f"Accuracy over time (Final: {np.mean(accs,axis=0)[config.length-2]})\n{config.full_loc}", fontsize=16)
-    for i in range(len(accs)):
-        plt.plot(accs[i],'--',label=config.classes[i])
-    plt.plot(np.mean(accs,axis=0),linewidth=3,label="mean")
+    plt.title(f"Certainty over time (Final Mean: {final_mean}\n{config.full_loc})", fontsize=16)
+    for i in range(len(accs_array)):
+        plt.plot(accs_array[i],'--',label=config.classes[i])
+    plt.plot(np.mean(accs_array,axis=0),linewidth=3,label="mean")
     plt.xlabel("Time (ms), dt=1ms", fontsize=14)
-    plt.ylabel("Ratio of Correctness", fontsize=14)
+    plt.ylabel("Ratio WTA of Correctness", fontsize=14)
     plt.ylim(0,1.03)
     plt.legend()
     dirName = f"results/{config.dir}/performance/plots"

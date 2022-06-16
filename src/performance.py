@@ -9,7 +9,7 @@ from processing import read_in_ranks, print_rankings
 # sweep = 'full_sweep'
 # ranked = read_in_ranks(sweep,'full_sweep-rankings')
 
-sweep = 'poisson'
+sweep = 'poisson_dense'
 ranked = read_in_ranks(sweep,f'{sweep}-rankings')
 #print_rankings(ranked,"Performance",100)
 
@@ -67,7 +67,7 @@ features = {
 
 }
 
-lim = 50
+lim = 25
 feat = ranking_analysis(ranked,features,lim)
 
 
@@ -87,7 +87,6 @@ def hist_ranked(keys,feat):
         GEO.append(feat[keys[3*i+1]]/100)
         SMW.append(feat[keys[3*i+2]]/100)
 
-    print(GEO)
     #%%
     x = np.arange(len(labels)) 
     # print(x)

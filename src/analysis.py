@@ -25,6 +25,8 @@ ToDo:
 """
 #%%
  
+sweep  = 'winner_sweep'
+
 def performance_pull(sweep):
     """
     Pull .npy Files for Analysis
@@ -50,7 +52,6 @@ def performance_pull(sweep):
 
     return all_accs
 
-sweep  = 'poisson'
 all_accs = performance_pull(sweep)
 
 #%%
@@ -164,7 +165,7 @@ def top_plot(names,sweep,save):
     plt.title("Title")
     patterns=["A","B","C"]
 
-    top_5 = names[5:10]
+    top_5 = names[:5]
     print(top_5)
     for i,pattern in enumerate(patterns):
         suffix = "_pat"+pattern+"_rep0.txt"
@@ -174,23 +175,6 @@ def top_plot(names,sweep,save):
             dat, indices, times = txt_to_spks(prefix+name+suffix)
             axs[j, i].plot(times, indices, '.k', ms=.7)
             axs[j, i].set_title(name, size=8)
-
-            # legacy from old naming format, ignore
-            '''
-            # txt_file = prefix+name[:-4]+suffix
-            # if name[0]=="M":
-            #     under = txt_file[:5+len(prefix)]+"_"+txt_file[5+len(prefix):]
-            # else:
-            #     under = txt_file[:4+len(prefix)]+"_"+txt_file[4+len(prefix):]
-            # try:
-            #     dat, indices, times = txt_to_spks(under)
-            # except:
-            #     if under[61] == "_":
-            #         dunder = under[:61]+under[62:]
-            #     else:
-            #         dunder = under[:62]+under[63:]
-            #     dat, indices, times = txt_to_spks(dunder)
-            '''
 
     for ax in axs.flat:
         ax.set(xlabel='time (ms)', ylabel='neuron index')
@@ -209,19 +193,20 @@ top_plot(names,sweep,save)
 
 
 # %%
-from performance import ranking_analysis
+from performance import ranking_analysis, hist_ranked
+
 
 features = {
     'Maass':0,
     'STDP':0,
     'STSP':0,
+    'LSTP':0,
     'rnd=':0,
     'geo=':0,
     'smw':0,
-
-    'RS=0.15':0,
-    'RS=0.3':0,
-    'RS=0.45':0,
+    'RS=0.01':0,
+    'RS=0.05':0,
+    'RS=0.1':0,
     'delay=0.0':0,
     'delay=1.5':0,
     'delay=3.0':0,
@@ -237,6 +222,10 @@ features = {
     'STSP_rnd=':0,
     'STSP_geo=':0,
     'STSP_smw=':0,
+
+    'LSTP_rnd=':0,
+    'LSTP_geo=':0,
+    'LSTP_smw=':0,
     
     'sm0.0':0,
     'sm0.25':0,
@@ -248,52 +237,18 @@ features = {
 
 }
 
+lim = 144
 
-lim = 93
-feat = ranking_analysis(names,features,lim)
+feat = ranking_analysis(ranked,features,lim)
+
 
 #%%
-def hist_ranked(keys,feat):
-    labels = ['Maass', 'STDP','STSP']
-
-    RND=[]
-    GEO=[]
-    SMW=[]
-    for i in range(3):
-        RND.append(feat[keys[3*i]]/100)
-        GEO.append(feat[keys[3*i+1]]/100)
-        SMW.append(feat[keys[3*i+2]]*.75/100)
-
-
-    #%%
-    x = np.arange(len(labels))  # the label locations
-    print(x)
-    x= np.array([0.5,1,1.5])
-    width = 0.1  # the width of the bars
-
-    #fig, plt = plt.subplots()
-    plt.figure(figsize=(7,7))
-    plt.style.use('seaborn-muted')
-
-    rects1 = plt.bar(x - width-.01, RND, width, label='random')
-    rects2 = plt.bar(x, GEO, width, label='geometric')
-    rects3 = plt.bar(x + width+.01, SMW, width, label='small-world')
-
-
-    plt.ylabel('Percent Present',fontsize=18)
-    plt.title('Clusterable Configurations',fontsize=22)
-    plt.xticks(x, labels,fontsize=18)
-    plt.legend(fontsize=20) # using a size in points
-    plt.legend(fontsize="x-large") # using a named size
-    # plt.bar_label(rects1, padding=3)
-    # plt.bar_label(rects2, padding=3)
-
-    plt.tight_layout()
-
-    plt.show()
-
-
 keys_list = list(feat)
-keys = keys_list[12:21]
+keys = keys_list[13:25]
+print(keys)
+
 
 hist_ranked(keys,feat)
+# %%
+
+# %%
