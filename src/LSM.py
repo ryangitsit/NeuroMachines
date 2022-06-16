@@ -336,34 +336,34 @@ class ReadoutMap():
         ########################################  
                     # CHUNKING #    
         ########################################      
-        chunk_size = 5
-        train_chunks = []
-        target_chunks = []
-        count = 0
-        for slice in range(int(len(training)/chunk_size)):
-            chunk = []
-            for c in range(chunk_size):
-                chunk.append(training[count])
-                count+=1
-            train_chunks.append(array(np.concatenate(np.array(chunk))))
-            target_chunks.append(target[count-1])
+        # chunk_size = 1
+        # train_chunks = []
+        # target_chunks = []
+        # count = 0
+        # for slice in range(int(len(training)/chunk_size)):
+        #     chunk = []
+        #     for c in range(chunk_size):
+        #         chunk.append(training[count])
+        #         count+=1
+        #     train_chunks.append(array(np.concatenate(np.array(chunk))))
+        #     target_chunks.append(target[count-1])
 
-        training = train_chunks
-        target = target_chunks
+        # training = train_chunks
+        # target = target_chunks
 
-        test_chunks = []
-        test_target_chunks = []
-        count = 0
-        for slice in range(int(len(testing)/chunk_size)):
-            chunk = []
-            for c in range(chunk_size):
-                chunk.append(testing[count])
-                count+=1
-            test_chunks.append(array(np.concatenate(np.array(chunk))))
-            test_target_chunks.append(test_target[count-1])
+        # test_chunks = []
+        # test_target_chunks = []
+        # count = 0
+        # for slice in range(int(len(testing)/chunk_size)):
+        #     chunk = []
+        #     for c in range(chunk_size):
+        #         chunk.append(testing[count])
+        #         count+=1
+        #     test_chunks.append(array(np.concatenate(np.array(chunk))))
+        #     test_target_chunks.append(test_target[count-1])
 
-        testing = np.array(test_chunks)
-        test_target = test_target_chunks
+        # testing = np.array(test_chunks)
+        # test_target = test_target_chunks
         ########################################      
         ########################################  
 
@@ -387,15 +387,17 @@ class ReadoutMap():
 
         
         for i,pat in enumerate(config.classes):
-            hit = 0
-            track = 0
+            # hit = 0
+            # track = 0
             run = []
             for j in range(int(config.length/chunk_size)):
                 run.append(predictions[count])
                 pred_index = config.classes.index(predictions[count])
                 pre_labs[i][pred_index] += 1
-
-                cert = np.clip(pre_labs[i][pred_index]/(np.max(pre_labs[i])+1),0,1)
+                if config.classes[np.argmax(pre_labs[i])] == pat:
+                    cert = 1
+                else:
+                    cert = np.clip(pre_labs[i][i]/(np.max(pre_labs[i])+1),0,1)
 
                 # if max(set(run), key = run.count) == pat:
                 #     hit+=1
@@ -410,11 +412,13 @@ class ReadoutMap():
                 #     runner_up = c[most_common[1]]
                 #     cert = np.clip(track/runner_up,0,1)
                 #cert = np.clip(track/((j+1)/2),0,1)
+
                 certainties[i].append(cert)
                 count+=1
+                
             #print(f"{pat}: {hit/(j+1)}")
-            print(f"{pat}: {cert}")
-        print(pre_labs)
+        #     print(f"{pat}: {cert}")
+        # print(pre_labs)
 
 
 
