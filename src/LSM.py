@@ -8,8 +8,11 @@ import string
 from processing import *
 from reservoirs import reservoir
 from poisson_generator import gen_poisson_pattern,create_jitter
-from plotting import performance, raster_save
+from plotting import performance, raster_plot, raster_save
 import pickle
+
+from collections import Counter
+
 
 # #pick = 'results/scale_testing/configs/Maass_rnd=(randNone_geoNone_smNone)_N=100_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6.pickle'
 # pick = 'results/scale_testing/configs/Maass_rnd=(rand0.01_geoNone_smNone)_N=100_IS=0.05_RS=0.01_ref=0.0_delay=0.0_U=0.6.pickle'
@@ -187,12 +190,12 @@ class LiquidState():
             print(f"  {k} = {self.__dict__[k]}")
         print("-----------------\n")
 
-    def simulate(self,inputs,example):
+    def simulate(self,inputs,example,nets,G,S):
 
-        start_scope()
+        # # start_scope()
 
-        G, S = reservoir(self)
-        nets = Network(G, S)
+        # # G, S = reservoir(self)
+        # # nets = Network(G, S)
 
         if inputs.input_name == 'Poisson':
             timed = inputs.times[example]*ms
@@ -207,24 +210,62 @@ class LiquidState():
         SP.connect('i!=j', p=self.input_sparsity)
         spikemon = SpikeMonitor(G)
         nets.add(SGG, SP, spikemon)
-        nets.store()
+        #nets.store()
         nets.run((self.T)*ms)
         indices = np.array(spikemon.i)
         times = np.array(spikemon.t/ms)
-        #nets.restore()
+        nets.remove(SGG,SP,spikemon)
+        nets.restore()
 
         return [indices,times]
+        # return [inputs.units[example],timed/ms]
+
+
 
     def respond(self,inputs,dataset):
+
+        start_scope()
+        G, S = reservoir(self)
+        nets = Network(G, S)
+        nets.store()
+
         for k,v in dataset.items():
-            for i,rep in enumerate(v):
-                item = f'pat{k}_rep{i}'
-                print(f"\n --- Responding to pattern {k}, replica {i} --- \n")
+            for r,rep in enumerate(v):
+                item = f'pat{k}_rep{r}'
+                print(f"\n --- Responding to pattern {k}, replica {r} --- \n")
                 loc_liq = f'{self.dir}/liquid'
                 item_liq = f'{self.full_loc}_{item}'
-                result = self.simulate(inputs,rep)
-                indices = result[0]
-                times = result[1]
+                # result = self.simulate(inputs,rep,nets,G,S)
+                # indices = result[0]
+                # times = result[1]
+
+
+                #################
+                #################
+                example = rep
+                if inputs.input_name == 'Poisson':
+                    timed = inputs.times[example]*ms
+                elif inputs.input_name =='Heidelberg':
+                    timed = inputs.times[example]*1000*ms
+                else:
+                    print("Input skipped")
+                
+                SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=1*us)
+                
+                SP = Synapses(SGG, G, on_pre='v+=1')
+                SP.connect('i!=j', p=self.input_sparsity)
+                spikemon = SpikeMonitor(G)
+                nets.add(SGG, SP, spikemon)
+                #nets.store()
+                nets.run((self.T)*ms)
+                indices = np.array(spikemon.i)
+                times = np.array(spikemon.t/ms)
+                nets.remove(SGG,SP,spikemon)
+                nets.restore()
+                #################
+                #################
+
+
                 save_spikes(self.N,inputs.length,times,indices,loc_liq,item_liq)
 
 
@@ -290,39 +331,39 @@ class ReadoutMap():
         target = self.full_labels[:self.train_range]
         testing = self.full_train[self.train_range:]
         test_target = self.full_labels[self.train_range:]
-        chunk = 1
+        chunk_size = 1
 
         ########################################  
                     # CHUNKING #    
         ########################################      
-        # chunk_size = 10
-        # train_chunks = []
-        # target_chunks = []
-        # count = 0
-        # for slice in range(int(len(training)/chunk_size)):
-        #     chunk = []
-        #     for c in range(chunk_size):
-        #         chunk.append(training[count])
-        #         count+=1
-        #     train_chunks.append(array(np.concatenate(np.array(chunk))))
-        #     target_chunks.append(target[count-1])
+        chunk_size = 5
+        train_chunks = []
+        target_chunks = []
+        count = 0
+        for slice in range(int(len(training)/chunk_size)):
+            chunk = []
+            for c in range(chunk_size):
+                chunk.append(training[count])
+                count+=1
+            train_chunks.append(array(np.concatenate(np.array(chunk))))
+            target_chunks.append(target[count-1])
 
-        # training = train_chunks
-        # target = target_chunks
+        training = train_chunks
+        target = target_chunks
 
-        # test_chunks = []
-        # test_target_chunks = []
-        # count = 0
-        # for slice in range(int(len(testing)/chunk_size)):
-        #     chunk = []
-        #     for c in range(chunk_size):
-        #         chunk.append(testing[count])
-        #         count+=1
-        #     test_chunks.append(array(np.concatenate(np.array(chunk))))
-        #     test_target_chunks.append(test_target[count-1])
+        test_chunks = []
+        test_target_chunks = []
+        count = 0
+        for slice in range(int(len(testing)/chunk_size)):
+            chunk = []
+            for c in range(chunk_size):
+                chunk.append(testing[count])
+                count+=1
+            test_chunks.append(array(np.concatenate(np.array(chunk))))
+            test_target_chunks.append(test_target[count-1])
 
-        # testing = np.array(test_chunks)
-        # test_target = test_target_chunks
+        testing = np.array(test_chunks)
+        test_target = test_target_chunks
         ########################################      
         ########################################  
 
@@ -331,35 +372,54 @@ class ReadoutMap():
         logisticRegr = LogisticRegression(max_iter=500)
         logisticRegr.fit(training, target)
 
+
+        # Make predictions on unseen data for testing range
+        print("Making predictions...")
         predictions=[]
         for i in range(len(testing)):
             prediction = logisticRegr.predict(testing[i].reshape(1, -1))
             predictions.append(prediction[0])
         print(predictions)
 
-        # certainties = [[] for _ in range(config.patterns)]
-        # pre_labs = np.zeros((config.patterns,config.patterns))
-        # count = 0
+        certainties = [[] for _ in range(config.patterns)]
+        pre_labs = np.zeros((config.patterns,config.patterns))
+        count = 0
 
         
-        # for i,pat in enumerate(config.classes):
-        #     hit = 0
-        #     run = []
-        #     for j in range(int(config.length/chunk)):
-        #         run.append(predictions[count])
-        #         pred_index = config.classes.index(predictions[count])
-        #         pre_labs[i][pred_index] += 1
-        #         if max(set(run), key = run.count) == pat:
-        #             hit+=1
-        #         certainties[i].append(hit/(j+1))
-        #         count+=1
-        #     print(f"{pat}: {hit/(j+1)}")
-        # print(pre_labs)
-        # # Make predictions on unseen data for testing range
-        # print("Making predictions...")
+        for i,pat in enumerate(config.classes):
+            hit = 0
+            track = 0
+            run = []
+            for j in range(int(config.length/chunk_size)):
+                run.append(predictions[count])
+                pred_index = config.classes.index(predictions[count])
+                pre_labs[i][pred_index] += 1
+
+                cert = np.clip(pre_labs[i][pred_index]/(np.max(pre_labs[i])+1),0,1)
+
+                # if max(set(run), key = run.count) == pat:
+                #     hit+=1
+                # #certainties[i].append(hit/(j+1))
+                # if j < 1:
+                #     certainties[i].append(hit)
+                # else:
+                #     if predictions[count] == pat:
+                #         track +=1
+                #     c = Counter(run)
+                #     most_common = [key for key, val in c.most_common(2)]
+                #     runner_up = c[most_common[1]]
+                #     cert = np.clip(track/runner_up,0,1)
+                #cert = np.clip(track/((j+1)/2),0,1)
+                certainties[i].append(cert)
+                count+=1
+            #print(f"{pat}: {hit/(j+1)}")
+            print(f"{pat}: {cert}")
+        print(pre_labs)
+
+
+
+
         # predictions = []
-        
-        
         # clean_accs = [[] for _ in range(config.patterns)]
         # clean_success = np.zeros((config.patterns,1))
         # classes = config.classes
@@ -404,26 +464,26 @@ class ReadoutMap():
 
 
         # Check prediction performance against correct labels
-        runs = np.zeros((config.patterns,config.patterns))
-        accs = []
-        for lab in range(config.patterns):
-            accs.append([])
-            start=config.length*lab
-            stop=config.length*(lab+1)
-            succ=0
-            for i in range(start, stop):
-                for p in range(config.patterns):
-                    if predictions[i]==config.classes[p]:
-                        runs[lab][p] += 1
-                if np.argmax(runs[lab][:])==lab and i>1:
-                    if i>1 and i!=start:
-                        succ+=1            
-                if i!=start:
-                    accs[lab].append((succ/(i-start)))
+        # runs = np.zeros((config.patterns,config.patterns))
+        # accs = []
+        # for lab in range(config.patterns):
+        #     accs.append([])
+        #     start=config.length*lab
+        #     stop=config.length*(lab+1)
+        #     succ=0
+        #     for i in range(start, stop):
+        #         for p in range(config.patterns):
+        #             if predictions[i]==config.classes[p]:
+        #                 runs[lab][p] += 1
+        #         if np.argmax(runs[lab][:])==lab and i>1:
+        #             if i>1 and i!=start:
+        #                 succ+=1            
+        #         if i!=start:
+        #             accs[lab].append((succ/(i-start)))
 
-        accs_array = np.array(accs)
+        #accs_array = np.array(accs)
+        accs_array = np.array(certainties)
 
-        # accs_array = np.array(certainties)
         #print(accs_array)
         final_mean = np.round(np.mean(accs_array,axis=0)[-1],2)
         performance(config,accs_array,final_mean)

@@ -9,7 +9,7 @@ import seaborn as sns
 
 
 def raster_plot(time, index):
-    plt.figure(figsize=(24, 8))
+    plt.figure(figsize=(12, 8))
     plt.plot(time/ms, index, '.k')
     plt.title('Raster Plot')
     plt.xlabel('Time (ms)')
