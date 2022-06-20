@@ -10,7 +10,15 @@ from processing import *
 """"
 File description
 """
+#%%
 
+sweep = "instant_sweep"
+classes=["A","B","C"]
+classes=["ZERO","ONE","TWO"]
+replicas = 3
+components = 3
+moment=490
+write = True
 
 #%%
 
@@ -46,7 +54,8 @@ def pc_stack(groups):
     for k,v in groups.items():
         for i, slice in enumerate(v):
             norm = (np.array(slice)-np.mean(slice))
-            all_norms.append(norm)
+            all_norms.append(norm[:990])
+            print(norm.shape)
     all_norms = np.stack(all_norms)
     pc_obj = PCA(n_components=3)
     pc_slice = pc_obj.fit_transform(all_norms)
@@ -172,12 +181,6 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
 
     return spikes, groups, exp_pcs, stacks
 
-sweep = "poisson"
-classes=["A","B","C"]
-replicas = 3
-components = 3
-moment=99
-write = True
 
 spikes, groups, exp_pcs, stacks = analysis_loop(sweep,classes,replicas,moment,components,write)
 
@@ -208,8 +211,8 @@ def path_stacks(sweep,classes,replicas,m1,m2,name):
                     exp_name=file[len(directory)+1:-14]
 
                 dat,indices,times = txt_to_spks(file)
-                length = int(np.ceil(np.max(times)))
-                neurons = np.max(indices) + 1
+                length = 700 #int(np.ceil(np.max(times)))
+                neurons = 700 # np.max(indices) + 1
                 # print("n=",neurons)
 
                 mat=one_hot(neurons,length,indices,times)
@@ -229,8 +232,8 @@ def path_stacks(sweep,classes,replicas,m1,m2,name):
 replicas=3
 components=3
 m1 = 0
-m2 = 99
-name = '\STSP_rnd=(rand0.45_geoNone_smNone)_N=64_IS=0.2_RS=0.45_ref=1.5_delay=0.0_U=0.6'
+m2 = 699
+name = '\Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=1000_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6'
 
 
 path_sep_minus = path_stacks(sweep,classes,replicas,m1,m2,name)
@@ -338,7 +341,7 @@ def ranking_comparison(dict1,dict2):
             if k1 == k2:
                 I.append(i)
                 J.append(j)
-            print(k1,k2)
+            #print(k1,k2)
     return I,J
 
 I,J = ranking_comparison(ranked_separation, ranked_performance)
@@ -403,14 +406,14 @@ def pc_plotting(pcs):
                 pc = val[count]
                 ax.scatter(pc[0],pc[1],pc[2], marker=markers[i],color=colors[i],s=250,label=classes[i])
                 count+=1
-
+                print(pc[0],pc[1],pc[2])
         means = {}
         for i,let in enumerate(classes):
             #print(replicas*i+replicas)
             mean = np.mean((pcs[key][replicas*i:replicas*i+replicas]),axis=0)
             means[let] = mean
             ax.scatter(mean[0],mean[1],mean[2], marker='o',color=colors[i],s=450,label=classes[i])
-
+            print(mean[0],mean[1],mean[2])
     plt.xlim(-2.5,2.5)
     plt.ylim(-2.5,2.5)
     # plt.legend()
@@ -431,7 +434,7 @@ def unit_dict(dict,key):
     return unit_dict
 
 # high sep
-sing = 'Maass_geo=(randNone_geo[16, 2, 2]_smNone)_N=64_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6'
+sing = 'Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=1000_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
 # low sep
 
 # high perf
@@ -496,6 +499,9 @@ def path_plotting(path_stacks):
             #ax.scatter(mean[0],mean[1],mean[2], marker='o',s=(time)*3, color=colors[i],label=classes[i])
             #plt.plot(xline,yline,zline, color=colors[i],label=classes[i])
 
+
+    start = 50
+    until = 100
     for i,(k,v) in enumerate(lines.items()):
         xs = []
         ys = []
@@ -508,14 +514,14 @@ def path_plotting(path_stacks):
             xs.append(c[0])
             ys.append(c[1])
             zs.append(c[2])
-        print(zs)
-        plt.plot(xs,ys,zs, color=colors[i],label=classes[i])
+        # print(zs)
+        plt.plot(xs[start:until],ys[start:until],zs[start:until], color=colors[i],label=classes[i])
 
 
-    plt.xlim(-2,2)
-    plt.ylim(-2,2)
+    plt.xlim(-1,1)
+    plt.ylim(-1,1)
     plt.legend()
-    ax.set_zlim(-2,2)
+    ax.set_zlim(-1,1)
 
     ax.set_xlabel('Replica 0 Component')
     ax.set_ylabel('Replica 1 Component')
@@ -524,6 +530,8 @@ def path_plotting(path_stacks):
     plt.show()
 
 path_plotting(path_sep_minus)
+
+#print(path_sep_minus)
 
 
 #%%

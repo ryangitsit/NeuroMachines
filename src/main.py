@@ -10,20 +10,12 @@ def main():
     full_loc=f"{config.learning}_{config.topology}=(rand{config.rndp}_geo{config.dims}_sm{config.beta})_N={config.neurons}_IS={config.input_sparsity}_RS={config.res_sparsity}_ref={config.refractory}_delay={config.delay}_U={config.STSP_U}"
     config.full_loc=full_loc
 
+
     # Display Config Settings
-    print("\nConfiguration Settings")
-    for k,v in (config.__dict__).items():
-        print(f"  {k}: {v}")
-    print("\n")
-
-    path = f'results/{config.dir}/configs/'
-    name = f'{config.full_loc}.json'
-    write_dict(config.__dict__,path,name)
-
-    pick = f'{path}{name[:-5]}.pickle'
-    filehandler = open(pick, 'wb') 
-    pickle.dump(config, filehandler)
-    filehandler.close()
+    # print("\nConfiguration Settings")
+    # for k,v in (config.__dict__).items():
+    #     print(f"  {k}: {v}")
+    # print("\n")
 
 
     ### INPUT ###
@@ -48,6 +40,13 @@ def main():
         inputs.describe()
 
     elif config.just_input == False:
+
+        if config.input_name == "Heidelberg":
+            names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','NULL','EINS','ZWEI','DREI','VIER','FUNF','SECHS','SEBEN','ACHT','NEUN','ZEHN']
+        elif config.input_name == "Poisson":
+            names = string.ascii_letters[26:52]
+        config.classes=names[:config.patterns]
+        print(config.classes)
         dataset = inputs.read_data(config)
         print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
         for k,v in dataset.items():

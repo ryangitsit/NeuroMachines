@@ -25,7 +25,43 @@ ToDo:
 """
 #%%
  
-sweep  = 'winner_sweep'
+sweep  = 'instant_poisson'
+
+def weight_pull(sweep):
+
+    directory = f'results/{sweep}/weights'
+    all_accs = {}
+
+    for filename in os.listdir(directory):
+        file = os.path.join(directory, filename)
+        print(file[:-4])
+        with open(file, 'rb') as f:
+            accs = np.load(f, allow_pickle=True)
+        all_accs[file[len(directory)+1:-4]] = accs
+
+    return all_accs
+
+all_Ws = weight_pull(sweep)
+print(all_Ws['Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=64_IS=0.3_RS=0.2_ref=0.0_delay=0.0_U=1.0'][0,63])
+
+#%%
+x = []
+y = []
+for i in range(63):
+    for j in range(63):
+        x.append(i)
+        y.append(j)
+for k,W in all_Ws.items():
+    plt.figure(figsize=(16, 8))
+    for i in range(len(x)):
+        plt.plot(x[i], y[i], '.k', ms = W[x[i],y[i]]*15)
+    plt.show()
+    # title(f'Synaptic Connections and Weights {k}')
+    # xlabel('Source neuron position (um)')
+    # ylabel('Target neuron position (um)');
+
+#%%
+sweep  = 'instant_sweep'
 
 def performance_pull(sweep):
     """
@@ -132,7 +168,7 @@ def best_performance(all_avgs,sweep,write):
 write  = True
 ranked = best_performance(all_avgs,sweep,write)
 
-print(ranked)
+#print(ranked)
 
 #%%
 
@@ -197,6 +233,22 @@ from performance import ranking_analysis, hist_ranked
 
 
 features = {
+    'Maass_rnd=':0,
+    'Maass_geo=':0,
+    'Maass_smw=':0,
+
+    'STDP_rnd=':0,
+    'STDP_geo=':0,
+    'STDP_smw=':0,
+
+    'STSP_rnd=':0,
+    'STSP_geo=':0,
+    'STSP_smw=':0,
+
+    'LSTP_rnd=':0,
+    'LSTP_geo=':0,
+    'LSTP_smw=':0,
+
     'Maass':0,
     'STDP':0,
     'STSP':0,
@@ -204,12 +256,27 @@ features = {
     'rnd=':0,
     'geo=':0,
     'smw':0,
-    'RS=0.01':0,
-    'RS=0.05':0,
+    # 'RS=0.01':0,
+    # 'RS=0.05':0,
+    # 'RS=0.1':0,
     'RS=0.1':0,
+    'RS=0.2':0,
+    'RS=0.3':0,
+    'IS=0.1':0,
+    'IS=0.2':0,
+    'IS=0.3':0,
     'delay=0.0':0,
     'delay=1.5':0,
     'delay=3.0':0,
+    'IS=0.1_RS=0.1':0,
+    'IS=0.2_RS=0.1':0,
+    'IS=0.3_RS=0.1':0,
+    'IS=0.1_RS=0.2':0,
+    'IS=0.2_RS=0.2':0,
+    'IS=0.3_RS=0.2':0,
+    'IS=0.1_RS=0.3':0,
+    'IS=0.2_RS=0.3':0,
+    'IS=0.3_RS=0.3':0,
 
     'Maass_rnd=':0,
     'Maass_geo=':0,
@@ -226,6 +293,10 @@ features = {
     'LSTP_rnd=':0,
     'LSTP_geo=':0,
     'LSTP_smw=':0,
+
+    'geo[16, 2, 2]':0,
+    'geo[4, 4, 4]':0,
+    'geo[8, 4, 2]':0,
     
     'sm0.0':0,
     'sm0.25':0,
@@ -237,18 +308,19 @@ features = {
 
 }
 
-lim = 144
+lim = 50
 
 feat = ranking_analysis(ranked,features,lim)
 
 
 #%%
 keys_list = list(feat)
-keys = keys_list[13:25]
+keys = keys_list[0:12]
 print(keys)
 
 
 hist_ranked(keys,feat)
+
 # %%
 
 # %%

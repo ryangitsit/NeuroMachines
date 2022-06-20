@@ -2,19 +2,21 @@
 
 ECHO OFF
 
-@REM FOR %%z IN (Maass,STDP,STSP) DO (
+@REM py -3.8 main.py --just_input True --replicas 3 --patterns 3 --input_name "Heidelberg" --dir hei_fresh
+
+@REM FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
 @REM     FOR %%y IN (0, 1.5) DO (
 @REM         FOR %%x IN (0.0, 1.5) DO (
-@REM             FOR %%w IN (700) DO (
+@REM             FOR %%w IN (1000) DO (
 @REM                 FOR %%v IN (.01, 0.05, .1) DO (
-@REM                     py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir standard_hei --length 700
+@REM                     py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir hei_fresh --length 700 --input_name "Heidelberg" 
 @REM                 )
 @REM                 FOR %%u IN (0, .33, .66) DO (
-@REM                     py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir standard_hei --length 700 
+@REM                     py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir hei_fresh --length 700 --input_name "Heidelberg" 
 @REM                 )
-@REM                 py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 10 5 2 --topology geo  --dir standard_hei --length 700
-@REM                 py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 5 5 4 --topology geo  --dir standard_hei --length 700
-@REM                 py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 100 1 1 --topology geo  --dir standard_hei --length 700
+@REM                 py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 10 10 10 --topology geo  --dir hei_fresh --length 700 --input_name "Heidelberg" 
+@REM                 py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 50 10 2  --topology geo  --dir hei_fresh --length 700 --input_name "Heidelberg" 
+@REM                 py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 20 10 5 --topology geo  --dir hei_fresh --length 700 --input_name "Heidelberg" 
 @REM             )
 @REM         )
 @REM     )
@@ -32,27 +34,119 @@ ECHO OFF
 @REM     )
 @REM )
 
-@REM py -3.8 main.py --just_input True --length 100 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir winner_sweep
 
-FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
-    FOR %%y IN (0, 1.5, 3) DO (
-        FOR %%x IN (0.0, 1.5, 3) DO (
-            FOR %%w IN (64) DO (
-                FOR %%v IN (.2, 0.3, .4) DO (
-                    py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir winner_sweep --length 100 --input_name "Poisson"
-                )
-                FOR %%u IN (0.0, .33, .66) DO (
-                    py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir winner_sweep --length 100 --input_name "Poisson"
-                )
-                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 4 4 4 --topology geo  --dir winner_sweep --length 100 --input_name "Poisson"
-                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 8 4 2 --topology geo  --dir winner_sweep --length 100 --input_name "Poisson"
-                py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 16 2 2 --topology geo  --dir winner_sweep --length 100 --input_name "Poisson"
+
+
+
+@REM py -3.8 main.py --just_input True --length 500 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir double_sparse
+@REM FOR %%i IN (.01,.1,.2,.3) DO (
+@REM     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
+@REM         FOR %%y IN (0, 1.5, 3) DO (
+@REM             FOR %%x IN (0.0, 1.5, 3) DO (
+@REM                 FOR %%w IN (64) DO (
+@REM                     FOR %%v IN (.01,.1,.2,.3) DO (
+@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir double_sparse --length 500 --input_name "Poisson" --input_sparsity %%i
+@REM                         FOR %%u IN (0.0, .33, .66) DO (
+@REM                             py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir double_sparse --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                         )
+@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 4 4 4 --topology geo  --dir double_sparse --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 8 4 2 --topology geo  --dir double_sparse --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 16 2 2 --topology geo  --dir double_sparse --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                     )
+@REM                 )
+@REM             )
+@REM         )
+@REM     )
+@REM )
+
+
+@REM py -3.8 main.py --just_input True --length 500 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir double_sparse
+@REM FOR %%i IN (.1,.2,.3) DO (
+@REM     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
+@REM         FOR %%y IN (0, 3) DO (
+@REM             FOR %%x IN (0.0, 1.5) DO (
+@REM                 FOR %%w IN (64) DO (
+@REM                     FOR %%v IN (.1,.2,.3) DO (
+@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir double_sparse --length 500 --input_name "Poisson" --input_sparsity %%i
+@REM                         FOR %%u IN (0,0.5) DO (
+@REM                             py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir double_sparse --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                         )
+@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 4 4 4 --topology geo  --dir double_sparse --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                     )
+@REM                 )
+@REM             )
+@REM         )
+@REM     )
+@REM )
+
+@REM FOR %%i IN (1,2,3,4,5) DO (
+@REM     py -3.8 main.py --learning STSP --topology geo --dims 4 4 4 --patterns 2 --replicas 3  --dir instant_poisson --refractory 0 --delay 0 --input_name "Poisson" --length 100 --input_sparsity 0.4 --res_sparsity 0.2 --neurons 64 --x_atory True --STSP_U %%i
+@REM )
+
+
+
+@REM py -3.8 main.py --just_input True --length 100 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir IS_sweep
+@REM FOR %%i IN (.25,.3,3.5,.4,.5) DO (
+@REM     FOR %%z IN (Maass) DO (
+@REM         FOR %%w IN (64) DO (
+@REM             FOR %%v IN (.3) DO (
+@REM                 py -3.8 ./main.py --learning %%z  --neurons %%w --dims 4 4 4 --topology geo  --dir IS_sweep --length 100 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM             )
+@REM         )
+@REM     )
+@REM )
+
+@REM py -3.8 main.py --just_input True --length 100 --channels 700 --replicas 9 --patterns 3 --input_name "Heidelberg" --dir hei_rep
+@REM FOR %%i IN (.2,.3,.4) DO (
+@REM     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
+@REM         FOR %%w IN (1000) DO (
+@REM             FOR %%v IN (.3) DO (
+@REM                 py -3.8 ./main.py --learning %%z  --neurons %%w --dims 10 10 10 --topology geo  --dir hei_rep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+@REM             )
+@REM         )
+@REM     )
+@REM )
+
+@REM py -3.8 main.py --just_input True --length 100 --channels 700 --replicas 9 --patterns 3 --input_name "Heidelberg" --dir hei_repX
+FOR %%i IN (.15,2,3) DO (
+    FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
+        FOR %%w IN (135) DO (
+            FOR %%v IN (.3) DO (
+                py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_repX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+                py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --rndp 0.3 --topology geo  --dir hei_repX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
             )
         )
     )
 )
 
-@REM FOR %%i IN (1,2,3,4,5,6,7,8,9,10) DO (
-@REM     py -3.8 main.py --learning Maass --topology geo --dims 8 8 1  --dir scale_testing --refractory 3 --delay 2 --input_name "Poisson" --length 100 --input_sparsity 0.02 --res_sparsity 0.01 --neurons 64 --STSP_U %%i
+@REM py -3.8 main.py --just_input True --length 100 --channels 40 --replicas 3 --patterns 2 --input_name "Poisson" --dir instant_poisson
+@REM FOR %%i IN (.35) DO (
+@REM     FOR %%z IN (Maass) DO (
+@REM         FOR %%w IN (64) DO (
+@REM             FOR %%v IN (.3) DO (
+@REM                 py -3.8 ./main.py --learning %%z  --neurons %%w --dims 4 4 4 --topology geo  --dir instant_poisson --length 100 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i --replicas 3 --patterns 2
+
+@REM             )
+@REM         )
+@REM     )
 @REM )
+
+
+@REM x_atory
+@REM py -3.8 main.py --just_input True --length 500 --channels 40 --replicas 3 --patterns 3 --input_name "Poisson" --dir x_atory
+@REM FOR %%i IN (.1,.2,.3) DO (
+@REM     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
+@REM         FOR %%w IN (64) DO (
+@REM             FOR %%v IN (.1,.2,.3) DO (
+@REM                 py -3.8 ./main.py --learning %%z  --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir x_atory --length 100 --input_name "Poisson" --input_sparsity %%i
+@REM                 FOR %%u IN (0,0.5) DO (
+@REM                     py -3.8 ./main.py --learning %%z  --neurons %%w --beta %%u --topology smw   --dir x_atory --length 100 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM                 )
+@REM                 py -3.8 ./main.py --learning %%z  --neurons %%w --dims 4 4 4 --topology geo  --dir x_atory --length 100 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
+@REM             )
+@REM         )
+@REM     )
+@REM )
+
+
 PAUSE

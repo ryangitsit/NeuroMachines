@@ -11,37 +11,35 @@ def reservoir(self):
 
     eqs = '''
     dv/dt = (-v)/(30*ms) : 1
+    ref : second
     x : metre
     y : metre
     z : metre
     '''
+  
+    G = NeuronGroup(self.N, eqs, threshold='v>15', reset='v = 13.5', refractory='ref', method='exact', dt=100*us)
+    G.v = 'rand()*1.5+13.5'
 
     if self.learning=="Maass":
-        G = NeuronGroup(self.N, eqs, threshold='v>1', reset='v = 0', refractory=ref, method='exact')
-        G.v = 'rand()'
-        S = Synapses(G, G, model='w : 1', on_pre='v_post += 0.2*w')
+        S = Synapses(G, G, model='w : 1', on_pre='v_post += w', method='linear', dt=100*us)
 
     elif self.learning=="STSP":
-        G = NeuronGroup(self.N, eqs, threshold='v>1', reset='v = 0', refractory=ref, method='euler')
-        G.v = 'rand()'
         S = Synapses(G, G,
                     '''
                     w : 1
-                    du/dt = ((0.5 - u)/(150*ms)) : 1 (clock-driven)
+                    du/dt = ((U - u)/(150*ms)) : 1 (clock-driven)
                     dr/dt = ((1 - r)/(20*ms)) : 1 (clock-driven)
                     ''',
                     on_pre='''
-                    v_post += w*(r*u)/0.5
+                    v_post += w*(r*u)/U
                     r += -u*r
-                    u += 0.5*(1-u)
+                    u += U*(1-u)
                     ''',
 
-                    method='linear'
+                    namespace={'U': self.STSP_U},method='linear', dt=100*us
                     )
 
     elif self.learning=="STDP":
-        G = NeuronGroup(self.N, eqs, threshold='v>1', reset='v = 0', refractory=ref, method='euler')
-        G.v = 'rand()'
         S = Synapses(G, G,
                     '''
                     w : 1
@@ -56,12 +54,10 @@ def reservoir(self):
                     on_post='''
                     apost += -0.01*(20*ms)/(20*ms)*1.05
                     w = clip(w+apre, 0, 0.01)
-                    ''', method='linear')
+                    ''', method='linear', dt=100*us)
 
 
     elif self.learning=="LSTP":
-        G = NeuronGroup(self.N, eqs, threshold='v>1', reset='v = 0', refractory=ref, method='euler')
-        G.v = 'rand()'
         S = Synapses(G, G,
                     '''
                     w : 1
@@ -81,8 +77,7 @@ def reservoir(self):
                     on_post='''
                     apost += -0.01*(20*ms)/(20*ms)*1.05
                     w = clip(w+apre, 0, 0.01)
-                    ''', namespace={'U': self.STSP_U}, method='linear')
-
+                    ''', namespace={'U': self.STSP_U}, method='linear', dt=100*us)
 
     else:
         print("Error: please select learning type.")
@@ -103,13 +98,51 @@ def reservoir(self):
     else:
         print("Error: please select topology type.")
         
-    for pre in range(self.N):
-        for post in range(self.N):
-            S.w[pre,post]=rand()
-    
-    S.delay = self.delay*ms
+    if self.x_atory == True:
+        n_type = np.random.randint(0,100,self.N)
+        w_scale = 1
+        EE = w_scale * .5 
+        EI = w_scale * 2.5
+        IE = w_scale * -2 
+        II = w_scale * -2 
 
-    return G, S
+        EI_split = int(.2*self.N)
+        EE_EI_IE_II = np.zeros((4,1))
+        for pre in range(self.N):
+            for post in range(self.N):
+                if n_type[pre] <= EI_split and n_type[post] <= EI_split:
+                    S.w[pre,post] = II
+                    S.delay[pre,post] = .8*ms
+                    G[pre].ref=2*ms
+
+                elif n_type[pre] <= EI_split and n_type[post] > EI_split:
+                    S.w[pre,post] = IE
+                    S.delay[pre,post] = .8*ms
+
+                elif n_type[pre] > EI_split and n_type[post] <= EI_split:
+                    S.w[pre,post] = EI
+                    S.delay[pre,post] = .8*ms
+
+                elif n_type[pre] > EI_split and n_type[post] > EI_split:
+                    S.w[pre,post] = EE
+                    S.delay[pre,post] = 1.5*ms
+                    G[pre].ref=3*ms
+
+    else:
+        for pre in range(self.N):
+            for post in range(self.N):
+                S.w[pre,post] = rand()
+                G.ref[pre] = self.refractory*ms
+        S.delay = self.delay*ms
+
+    W = np.zeros((self.N,self.N))
+    for i in range(self.N):
+        for j in range(self.N):
+            if (len(S.w[i,j])) > 0:
+                W[i,j] = S.w[i,j]
+    print(W.shape)
+    
+    return G, S, W
 
 
 

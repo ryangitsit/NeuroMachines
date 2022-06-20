@@ -16,9 +16,8 @@ def raster_plot(time, index):
     plt.ylabel('Neuron index')
     plt.show()
 
-
 def raster_save(time,index,dirName,item):
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(16, 12))
     if len(time) > 10000:
         plt.plot(time, index, '.k', ms=.7)
     else:
@@ -50,9 +49,10 @@ def raster_run_input(time,index,dirName,item):
 def performance(config,accs_array,final_mean):
     plt.figure(figsize=(14, 8))
     plt.style.use('seaborn-muted')
-    plt.title(f"Certainty over time (Final Mean: {final_mean}\n{config.full_loc})", fontsize=16)
+    plt.title(f"Certainty over time (Final Mean: {final_mean})\n{config.full_loc}", fontsize=16)
     for i in range(len(accs_array)):
         plt.plot(accs_array[i],'--',label=config.classes[i])
+    plt.axhline(y=1,linewidth=2,ls='--', label=f"Correct classification", color='k')
     plt.plot(np.mean(accs_array,axis=0),linewidth=3,label="mean")
     plt.xlabel("Time (ms), dt=1ms", fontsize=14)
     plt.ylabel("Ratio WTA of Correctness", fontsize=14)

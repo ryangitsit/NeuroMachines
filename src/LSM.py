@@ -36,7 +36,8 @@ class Input:
             file_path = f"datasets/{self.input_name}/{self.file}"
             fileh = tables.open_file(file_path, mode='r')
             self.units = fileh.root.spikes.units
-            self.times = fileh.root.spikes.times
+            times = fileh.root.spikes.times
+            self.times = times
             self.labels = fileh.root.labels
             self.channels = np.max(np.concatenate(self.units))+1
             self.length = np.max(np.concatenate(self.times))
@@ -61,7 +62,7 @@ class Input:
         self.units = UNITS
         self.times = TIMES
         self.labels = labels
-        self.channels = config.channels
+        self.channels = np.max(np.concatenate(self.units))+1
         self.length = config.length
         self.classes = config.patterns
         self.dataset = dataset
@@ -99,7 +100,8 @@ class Input:
         pattern_dataset = {}
         rates_dict = {}
         count = 0
-        for pattern in classes:
+        for i,pattern in enumerate(classes):
+            #config.rate_low = i*60+40
             print("Pattern: ", pattern)
             pattern_dataset[pattern] = []
             rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low, config.rate_high, config.length)
@@ -120,7 +122,7 @@ class Input:
         spike_len = len(pattern_dataset[classes[0]][0][:,1])
         print(f"Poisson pattern dataset generated, with size: ({class_length}, {rep_len}, {spike_len})")
         self.units = UNITS
-        self.times = TIMES
+        self.times = np.array(TIMES,dtype=object)/1000
         self.labels = labels
         self.channels = config.channels
         self.length = config.length
@@ -154,7 +156,7 @@ class Input:
                 input_times = self.times[rep]
                 loc = f'{location}/inputs'
                 item = f'pat{k}_rep{i}'
-                save_spikes(self.channels,self.length,input_times,input_units,loc,item)
+                save_spikes(self.channels,self.length,input_times*1000,input_units,loc,item)
 
 # inputs = Input(config)
 # dataset = inputs.read_data(config)
@@ -180,6 +182,7 @@ class LiquidState():
         self.full_loc = config.full_loc
         self.dir = config.dir
         self.STSP_U = config.STSP_U
+        self.x_atory = config.x_atory
 
     def __str__(self):
         return f"Liquid attributes: \n{self.__dict__.keys()}"
@@ -225,9 +228,17 @@ class LiquidState():
     def respond(self,inputs,dataset):
 
         start_scope()
-        G, S = reservoir(self)
+        G, S, W = reservoir(self)
         nets = Network(G, S)
         nets.store()
+
+        dirName = f"results/{self.dir}/weights/"
+        try:
+            os.makedirs(dirName)    
+        except FileExistsError:
+            pass
+        with open(f'results/{self.dir}/weights/{self.full_loc}.npy', 'wb') as f:
+            np.save(f, W, allow_pickle=True)
 
         for k,v in dataset.items():
             for r,rep in enumerate(v):
@@ -246,13 +257,14 @@ class LiquidState():
                 if inputs.input_name == 'Poisson':
                     timed = inputs.times[example]*ms
                 elif inputs.input_name =='Heidelberg':
-                    timed = inputs.times[example]*1000*ms
+                    timed = inputs.times[example]*ms
                 else:
                     print("Input skipped")
-                
-                SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=1*us)
-                
-                SP = Synapses(SGG, G, on_pre='v+=1')
+                DT = 1
+                print(f"--- dt = {DT} ---")
+                SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=DT*us)
+            
+                SP = Synapses(SGG, G, on_pre='v+=1', dt=DT*us)
                 SP.connect('i!=j', p=self.input_sparsity)
                 spikemon = SpikeMonitor(G)
                 nets.add(SGG, SP, spikemon)
@@ -314,6 +326,7 @@ class ReadoutMap():
 
         self.len_labels = len(self.labels)
         self.split = config.patterns*config.replicas - config.patterns #*int(tests)
+        print(self.split)
 
         print(f"  Number of 1ms time slice states: {len(self.labels)}\n  Distinct patterns: {config.patterns}")
 
@@ -332,40 +345,42 @@ class ReadoutMap():
         testing = self.full_train[self.train_range:]
         test_target = self.full_labels[self.train_range:]
         chunk_size = 1
+        chunking = True
+        if chunking==True:
+            ########################################  
+                        # CHUNKING #    
+            ########################################      
+            print("--- chunking ---")
+            chunk_size = 10
+            train_chunks = []
+            target_chunks = []
+            count = 0
+            for slice in range(int(len(training)/chunk_size)):
+                chunk = []
+                for c in range(chunk_size):
+                    chunk.append(training[count])
+                    count+=1
+                train_chunks.append(array(np.concatenate(np.array(chunk))))
+                target_chunks.append(target[count-1])
 
-        ########################################  
-                    # CHUNKING #    
-        ########################################      
-        # chunk_size = 1
-        # train_chunks = []
-        # target_chunks = []
-        # count = 0
-        # for slice in range(int(len(training)/chunk_size)):
-        #     chunk = []
-        #     for c in range(chunk_size):
-        #         chunk.append(training[count])
-        #         count+=1
-        #     train_chunks.append(array(np.concatenate(np.array(chunk))))
-        #     target_chunks.append(target[count-1])
+            training = train_chunks
+            target = target_chunks
 
-        # training = train_chunks
-        # target = target_chunks
+            test_chunks = []
+            test_target_chunks = []
+            count = 0
+            for slice in range(int(len(testing)/chunk_size)):
+                chunk = []
+                for c in range(chunk_size):
+                    chunk.append(testing[count])
+                    count+=1
+                test_chunks.append(array(np.concatenate(np.array(chunk))))
+                test_target_chunks.append(test_target[count-1])
 
-        # test_chunks = []
-        # test_target_chunks = []
-        # count = 0
-        # for slice in range(int(len(testing)/chunk_size)):
-        #     chunk = []
-        #     for c in range(chunk_size):
-        #         chunk.append(testing[count])
-        #         count+=1
-        #     test_chunks.append(array(np.concatenate(np.array(chunk))))
-        #     test_target_chunks.append(test_target[count-1])
-
-        # testing = np.array(test_chunks)
-        # test_target = test_target_chunks
-        ########################################      
-        ########################################  
+            testing = np.array(test_chunks)
+            test_target = test_target_chunks
+            ########################################      
+            ########################################  
 
         # # Fit liquid states to labels for training range
         print("Fitting regression model...")
@@ -390,15 +405,25 @@ class ReadoutMap():
             # hit = 0
             # track = 0
             run = []
+            running_pred = []
             for j in range(int(config.length/chunk_size)):
                 run.append(predictions[count])
                 pred_index = config.classes.index(predictions[count])
                 pre_labs[i][pred_index] += 1
-                if config.classes[np.argmax(pre_labs[i])] == pat:
-                    cert = 1
-                else:
-                    cert = np.clip(pre_labs[i][i]/(np.max(pre_labs[i])+1),0,1)
+                top_pred = config.classes[np.argmax(pre_labs[i])]
 
+                ## Running predictions predicts at each time step top class
+                # running_pred.append(top_pred)
+                # cert = (len([pred for pred in running_pred if pred == pat]) / len(running_pred))
+
+                ## Ratio of correct class top class
+                # if top_pred == pat:
+                #     cert = 1
+                # else:
+                #     cert = np.clip(pre_labs[i][i]/(np.max(pre_labs[i])+1),0,1)
+                cert = pre_labs[i][i]/(np.max(pre_labs[i]))
+
+                ## how often is correct class the most common so far?
                 # if max(set(run), key = run.count) == pat:
                 #     hit+=1
                 # #certainties[i].append(hit/(j+1))

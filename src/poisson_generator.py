@@ -12,7 +12,12 @@ def gen_poisson_pattern(channels, rate_low, rate_high, sim):
     """
     spikes_i = []
     spikes_t = []
+
+    #rate_low = randint(1,50)
+    # rate_high=rate_low+1
+    
     rand_rates = np.random.randint(rate_low,rate_high, channels)
+    print(rand_rates)
 
     for input in range(channels):
         input_rate=(rand_rates[input])*Hz
@@ -34,7 +39,7 @@ def create_jitter(sigma,times):
     - Returns new 'jittered' spike timing values
     """
     mu = 0
-    # sigma = 32
+    # sigma = 5
     for t in range(len(times)):
         spike_move = np.random.normal(mu, sigma)
         if spike_move > 0 and spike_move <= 500:
