@@ -6,7 +6,7 @@ import json
 from scipy.spatial import distance
 from sklearn.preprocessing import StandardScaler
 from processing import *
-
+import itertools
 """"
 File description
 """
@@ -182,8 +182,10 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
 
 
 spikes, groups, exp_pcs, stacks = analysis_loop(sweep,classes,replicas,moment,components,write)
-
-    #%%
+#%%
+print(len(list(stacks)))
+print()
+#%%
 def path_stacks(sweep,classes,replicas,m1,m2,name):
 
     np.seterr(divide='ignore', invalid='ignore')
@@ -193,7 +195,7 @@ def path_stacks(sweep,classes,replicas,m1,m2,name):
     path_stacks = []
 
     groups={}
-
+    m_range = np.arange(m1,m2,1)[:10]
     for m in range(m1,m2):
         print(m)
         for pat,label in enumerate(classes):
@@ -246,14 +248,12 @@ j_stacks = read_json(dirName,item)
 
 #%%
 
-def mean_separation(stacks,write=True):
+def mean_separation(stacks,classes,replicas,write=True):
     """
     Calculate Mean Distance Between Mean Pattern Replica PCs for All Configs
     - Return sorted dictionary
     """
 
-    classes=["A","B","C"]
-    replicas = 3
     separation = {}
 
     for key,val in stacks.items():
@@ -263,16 +263,23 @@ def mean_separation(stacks,write=True):
         reps = []
         for i,let in enumerate(classes):
             reps_pos = stacks[key][replicas*i:replicas*i+replicas]
+            #print(reps_pos)
             mean_position = np.mean((reps_pos),axis=0)
             stand = np.std((reps_pos),axis=0)
             means.append(mean_position)
             metric.append(stand)
 
             reps_dists=[]
-            for a,vr1 in enumerate(reps_pos):
-                for b,vr2 in enumerate(reps_pos):
-                    if a!=b:
-                        reps_dists.append(distance.euclidean(reps_pos[a],reps_pos[b]))
+            combos = list(itertools.combinations(list(reps_pos),2))
+            #print(combos)
+            ####
+            for c in combos:
+                reps_dists.append(distance.euclidean(c[0],c[1]))
+
+            # for a,vr1 in enumerate(reps_pos):
+            #     for b,vr2 in enumerate(reps_pos):
+            #         if a!=b:
+            #             reps_dists.append(distance.euclidean(reps_pos[a],reps_pos[b]))
             reps.append(np.mean(reps_dists))
 
             # print((stacks[key][replicas*i:replicas*i+replicas]))
@@ -282,16 +289,23 @@ def mean_separation(stacks,write=True):
             # print("\n")
             
         dists=[]
-        for i,v1 in enumerate(means):
-            for j,v2 in enumerate(means):
-                if i!=j:
-                    dists.append(distance.euclidean(means[i],means[j]))
+        #print(list(means))
+        dist_combos = list(itertools.combinations(list(means),2))
+        print(len(dist_combos))
+        for c in dist_combos:
+            dists.append(distance.euclidean(c[0],c[1]))
 
-        # separation[key] = np.mean(dists) - np.mean(reps)
-        # separation[key] = np.mean(dists)/np.mean(reps)
-        separation[key] = np.mean(dists) - np.mean(metric)
-        #  separation[key] = np.mean(dists)/np.mean(metric)
-        # separation[key] = np.mean(dists)
+        # for i,v1 in enumerate(means):
+        #     for j,v2 in enumerate(means):
+        #         if i!=j:
+        #             dists.append(distance.euclidean(means[i],means[j]))
+        #print(len(reps))
+        #separation[key] = np.mean(dists) - np.mean(reps)
+        separation[key] = np.log(np.mean(dists))/np.log(np.mean(metric))
+        #separation[key] = np.log(np.mean(dists))/np.log(np.mean(rep))
+        #separation[key] = np.mean(dists) - np.mean(metric)
+        #separation[key] = np.mean(dists)/np.mean(metric)
+        #separation[key] = np.mean(dists)
         
 
     ranked_separation = dict(reversed(sorted(separation.items(), key=lambda item: item[1])))
@@ -305,27 +319,13 @@ def mean_separation(stacks,write=True):
     
     return ranked_separation
 
-ranked_separation = mean_separation(j_stacks)
+replicas = 3
+ranked_separation = mean_separation(j_stacks,classes,replicas)
 
 #%%
-# sweep='full_sweep'
+
 item = f"{sweep}-rankings"
 ranked_performance = read_in_ranks(sweep,item)
-
-cutoff = 10
-count = 0
-hit = 0
-for i, (k,v) in enumerate(ranked_performance.items()):
-    #print(v, " - ", k)
-    if count < cutoff+1:
-        #print(k[:8])
-        if k[:4] == 'STSP':
-            count += 1
-            if k[4:8] == '_smw':
-                print(v, " - ", k)
-                hit +=1
-
-print(f"{hit}/{cutoff}")
 
 print_rankings(ranked_performance,"Performace",9)
 print_rankings(ranked_separation,"Separation",9)
@@ -337,7 +337,7 @@ def ranking_comparison(dict1,dict2):
     J = []
     for i, (k1,v1) in enumerate(dict1.items()):
         for j, (k2,v2) in enumerate(dict2.items()):
-            if k1 == k2:
+            if k1[:-2] == k2:
                 I.append(i)
                 J.append(j)
             #print(k1,k2)
@@ -345,7 +345,7 @@ def ranking_comparison(dict1,dict2):
 
 I,J = ranking_comparison(ranked_separation, ranked_performance)
 
-print(I,J)
+#print(I,J)
 #%%
 
 # from matplotlib import cm
@@ -371,7 +371,7 @@ def ranking_comparison_plot(I,J):
 
     type = 'means_only'
 
-    plt.savefig(f"results/{sweep}/performance/rank_compare_{sweep}_{type}.png")
+    #plt.savefig(f"results/{sweep}/performance/rank_compare_{sweep}_{type}.png")
     plt.show()
 
 ranking_comparison_plot(I,J)
@@ -380,11 +380,8 @@ ranking_comparison_plot(I,J)
 #%%
 
 
-def pc_plotting(pcs):
+def pc_plotting(pcs,classes,replicas):
 
-    # classes=["A","B","C"]
-    classes=["A","B","C"]
-    replicas = 3
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
@@ -405,14 +402,14 @@ def pc_plotting(pcs):
                 pc = val[count]
                 ax.scatter(pc[0],pc[1],pc[2], marker=markers[i],color=colors[i],s=250,label=classes[i])
                 count+=1
-                print(pc[0],pc[1],pc[2])
+                print(f"{c}-{j}",pc[0],pc[1],pc[2])
         means = {}
         for i,let in enumerate(classes):
             #print(replicas*i+replicas)
             mean = np.mean((pcs[key][replicas*i:replicas*i+replicas]),axis=0)
             means[let] = mean
             ax.scatter(mean[0],mean[1],mean[2], marker='o',color=colors[i],s=450,label=classes[i])
-            print(mean[0],mean[1],mean[2])
+            #print(f"{c}-{j}",mean[0],mean[1],mean[2])
     plt.xlim(-2.5,2.5)
     plt.ylim(-2.5,2.5)
     # plt.legend()
@@ -433,16 +430,73 @@ def unit_dict(dict,key):
     return unit_dict
 
 # high sep
-sing = 'LSTP_geo=(rand111.0_geo[15, 3, 3]_smNone)_N=135_IS=0.12_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
+# sing = 'Maass_rnd=(rand0.3_geoNone_smNone)_N=135_IS=0.14_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
+sing = 'Maass_smw=(rand111.0_geoNone_sm0.25)_N=135_IS=0.18_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
 # low sep
 
+
 # high perf
-#sing = 'Maass_rnd=(rand0.3_geoNone_smNone)_N=64_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6'
+# sing = 'STSP_rnd=(rand0.3_geoNone_smNone)_N=135_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
 # low perf
 
-single = unit_dict(j_stacks,sing)
-pc_plotting(single)
+# high sep
 
+single = unit_dict(j_stacks,sing)
+pc_plotting(single,classes,replicas)
+
+
+
+#%%
+
+def mean_separation(stacks,classes,replicas,write=True):
+    """
+    Calculate Mean Distance Between Mean Pattern Replica PCs for All Configs
+    - Return sorted dictionary
+    """
+
+    separation = {}
+
+    for key,val in stacks.items():
+        #print(key,val)
+        means = []
+        metric = []
+        reps = []
+        for i,let in enumerate(classes):
+            #print(replicas*i,replicas*i+replicas)
+            reps_pos = stacks[key][replicas*i:replicas*i+replicas]
+            print(reps_pos)
+            mean_position = np.mean((reps_pos),axis=0)
+            print(mean_position)
+
+            stand = np.std((reps_pos),axis=0)
+            means.append(mean_position)
+            metric.append(stand)
+
+            reps_dists=[]
+            combos = list(itertools.combinations(list(reps_pos),2))
+            for c in combos:
+                reps_dists.append(distance.euclidean(c[0],c[1]))
+            reps.append(np.mean(reps_dists))
+
+        dists=[]
+        dist_combos = list(itertools.combinations(list(means),2))
+        for c in dist_combos:
+            dists.append(distance.euclidean(c[0],c[1]))
+
+        print(len(reps))
+        #separation[key] = np.mean(dists) - np.mean(reps)
+        ##separation[key] = np.mean(dists)/np.mean(reps)
+        #separation[key] = np.mean(dists) - np.mean(metric)
+        #separation[key] = np.mean(dists)/np.mean(metric)
+        #separation[key] = np.mean(dists)
+        
+
+    ranked_separation = dict(reversed(sorted(separation.items(), key=lambda item: item[1])))
+
+    return ranked_separation
+
+replicas = 3
+separation = mean_separation(single,classes,replicas)
 
 #%%
 a = [3,8,12]

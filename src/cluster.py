@@ -5,17 +5,18 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 
-sweep = 'double_sparse'
+sweep = 'hei_X'
+moment = 490
 
 ## PCs
 # type = 'PCs'
 # dirName = f'results/{sweep}/performance'
-# item=f'{sweep}_99_stacks'
+# item=f'{sweep}_{moment}_stacks'
 
 ## Full Dimensionality
 type = 'groups'
 dirName = f'results/{sweep}/analysis'
-item = "m=99_groups"
+item = f"m={490}_groups"
 
 j_stacks = read_json(dirName,item)
 

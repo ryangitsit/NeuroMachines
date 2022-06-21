@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 import string
+import pickle
 
-from processing import txt_to_spks
+from processing import txt_to_spks,one_hot
 
 """
 Plan:
@@ -27,7 +28,7 @@ Plan:
 
 # Determine coherent expansion coefficient of input
 
-class Analysis():
+class PerformanceAnalysis():
     def __init__(self,sweep,type,patterns,replicas,save,show):
         self.sweep = sweep
         self.type = type
@@ -40,6 +41,7 @@ class Analysis():
             self.classes = names[:self.patterns]
         elif self.type == "Poisson":
             names = string.ascii_letters[26:52]
+            self.classes = names[:self.patterns]
 
     def __str__(self):
         return f"Dataset: \n{self.__dict__}"
@@ -141,25 +143,89 @@ class Analysis():
             plt.close()
 
 
+
+
+class StateAnalysis():
+    def __init__(self,config):
+        self.save = save
+        self.show = show
+        self.directory = f'results/{config.dir}/liquid/spikes'
+
+    def print_config(self):
+        print(config.neurons)
+
+    def analysis_loop(self):
+        experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
+        count = 0
+        spikes = {}
+        mats = {}
+        for exp in range(experiments):
+            for pat,label in enumerate(config.classes):
+                for r in range(config.replicas):
+                    #i = exp*config.patterns*config.replicas + pat*config.replicas + r
+                    #print(i)
+                
+                    filename = os.listdir(self.directory)[count]
+                    file = os.path.join(self.directory, filename)
+
+                    if (count) % 9 == 0:
+                        a = file
+                        b = '_pat'
+                        pat_loc = [(i, i+len(b)) for i in range(len(a)) if a[i:i+len(b)] == b]
+
+                        exp_name=file[len(self.directory)+1:pat_loc[0][0]]
+                        # exp_pcs[exp_name] = []
+                        print(f"{exp}-{count} experiment: {exp_name}")
+
+        #             dat,indices,times = txt_to_spks(file)
+        #             mat=one_hot(config.neurons,config.length,indices,times)
+
+        #             spikes[f"{label}-{r}"] = (indices,times)
+        #             mats[f"{label}-{r}"] = mat
+
+        #             count+=1
+        # self.spikes = spikes
+        # self.mats = mats
+    
+
 sweep = "hei_X"
-type = "Heidelberg"
-patterns = 3
-replicas = 3
-save = True
+
+
+directory = f'results/{sweep}/configs'
+filename = os.listdir(directory)[1]
+file = os.path.join(directory, filename)
+file_to_read = open(file, "rb")
+config = pickle.load(file_to_read)
+file_to_read.close()
+
+#print(config.__dict__)
+
+
+# type = "Heidelberg"
+# patterns = 3
+# replicas = 3
+save = False
 show = False
+# full_analysis = PerformanceAnalysis(sweep,type,patterns,replicas,save,show)
+# classes = full_analysis.classes
 
-full_analysis = Analysis(sweep,type,patterns,replicas,save,show)
-full_analysis.performance_pull()
-full_analysis.accs_plots()
-finals, totals = full_analysis.rankings()
-full_analysis.print_rankings(finals,"Final Performance",10)
-full_analysis.print_rankings(totals,"Total Performance",10)
+state_analysis = StateAnalysis(config)
+state_analysis.print_config()
+state_analysis.analysis_loop()
 
-top_finals=dict(itertools.islice(finals.items(),20))
-top_totals=dict(itertools.islice(totals.items(),20))
-full_analysis.accs_plots(top_totals)
-full_analysis.accs_plots(top_finals)
-full_analysis.top_plot()
+# full_analysis.performance_pull()
+# full_analysis.accs_plots()
+# finals, totals = full_analysis.rankings()
+# full_analysis.print_rankings(finals,"Final Performance",10)
+# full_analysis.print_rankings(totals,"Total Performance",10)
+
+# top_finals=dict(itertools.islice(finals.items(),20))
+# top_totals=dict(itertools.islice(totals.items(),20))
+# full_analysis.accs_plots(top_totals)
+# full_analysis.accs_plots(top_finals)
+# full_analysis.top_plot()
+
+
 
 
 

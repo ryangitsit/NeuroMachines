@@ -62,9 +62,8 @@ def one_hot(N,length,indices,times):
     hot_matrix = np.zeros((N,slices))
     for slice in range(0,slices):
         for t in range(len(times)):
-            if times[t] > slice and times[t] <= slice+1:
-                if indices[t] < length:
-                    hot_matrix[indices[t]][slice] += 1
+            if times[t] > slice and times[t] <= slice+1 and times[t] < length:
+                hot_matrix[indices[t]][slice] += 1
     return hot_matrix
 
 
@@ -228,12 +227,7 @@ def billboard(word):
     print("\n")
 
 
-def print_rankings(dict,name,vals):
-    print(f"\n      ### {name} Rankings ###\n")
-    for i, (key,value) in enumerate(dict.items()):
-        if i < vals:
-            print(value, " - ", key)
-    print("\n")
+
 
 
 def unit_dict(dict,key):

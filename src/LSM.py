@@ -307,6 +307,15 @@ class ReadoutMap():
                 mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
                 labels.append(pat)
 
+        storage_mats = np.array(mats)
+        dirName = f"results/{config.dir}/performance/liquids/encoded/"
+        try:
+            os.makedirs(dirName)    
+        except FileExistsError:
+            pass
+        with open(f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy', 'wb') as f:
+            np.save(f, storage_mats, allow_pickle=True)
+
         self.labels = labels
         self.mats = mats
 
