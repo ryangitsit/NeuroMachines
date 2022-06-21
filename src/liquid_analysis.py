@@ -12,8 +12,8 @@ File description
 """
 #%%
 
-sweep = "instant_sweep"
-classes=["A","B","C"]
+sweep = 'hei_X'
+#classes=["A","B","C"]
 classes=["ZERO","ONE","TWO"]
 replicas = 3
 components = 3
@@ -54,8 +54,7 @@ def pc_stack(groups):
     for k,v in groups.items():
         for i, slice in enumerate(v):
             norm = (np.array(slice)-np.mean(slice))
-            all_norms.append(norm[:990])
-            print(norm.shape)
+            all_norms.append(norm)
     all_norms = np.stack(all_norms)
     pc_obj = PCA(n_components=3)
     pc_slice = pc_obj.fit_transform(all_norms)
@@ -184,7 +183,7 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
 
 spikes, groups, exp_pcs, stacks = analysis_loop(sweep,classes,replicas,moment,components,write)
 
-#%%
+    #%%
 def path_stacks(sweep,classes,replicas,m1,m2,name):
 
     np.seterr(divide='ignore', invalid='ignore')
@@ -242,7 +241,7 @@ path_sep_minus = path_stacks(sweep,classes,replicas,m1,m2,name)
 #%%
 
 dirName = f'results/{sweep}/performance'
-item = f'{sweep}_99_stacks'
+item = f'{sweep}_{moment}_stacks'
 j_stacks = read_json(dirName,item)
 
 #%%
@@ -434,7 +433,7 @@ def unit_dict(dict,key):
     return unit_dict
 
 # high sep
-sing = 'Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=1000_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
+sing = 'LSTP_geo=(rand111.0_geo[15, 3, 3]_smNone)_N=135_IS=0.12_RS=0.3_ref=3.0_delay=1.5_U=0.6_p'
 # low sep
 
 # high perf

@@ -25,43 +25,43 @@ ToDo:
 """
 #%%
  
-sweep  = 'instant_poisson'
+sweep  = 'hei_X'
 
-def weight_pull(sweep):
+# def weight_pull(sweep):
 
-    directory = f'results/{sweep}/weights'
-    all_accs = {}
+#     directory = f'results/{sweep}/weights'
+#     all_accs = {}
 
-    for filename in os.listdir(directory):
-        file = os.path.join(directory, filename)
-        print(file[:-4])
-        with open(file, 'rb') as f:
-            accs = np.load(f, allow_pickle=True)
-        all_accs[file[len(directory)+1:-4]] = accs
+#     for filename in os.listdir(directory):
+#         file = os.path.join(directory, filename)
+#         print(file[:-4])
+#         with open(file, 'rb') as f:
+#             accs = np.load(f, allow_pickle=True)
+#         all_accs[file[len(directory)+1:-4]] = accs
 
-    return all_accs
+#     return all_accs
 
-all_Ws = weight_pull(sweep)
-print(all_Ws['Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=64_IS=0.3_RS=0.2_ref=0.0_delay=0.0_U=1.0'][0,63])
+# all_Ws = weight_pull(sweep)
+#print(all_Ws['Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=64_IS=0.3_RS=0.2_ref=0.0_delay=0.0_U=1.0'][0,63])
 
 #%%
-x = []
-y = []
-for i in range(63):
-    for j in range(63):
-        x.append(i)
-        y.append(j)
-for k,W in all_Ws.items():
-    plt.figure(figsize=(16, 8))
-    for i in range(len(x)):
-        plt.plot(x[i], y[i], '.k', ms = W[x[i],y[i]]*15)
-    plt.show()
+# x = []
+# y = []
+# for i in range(63):
+#     for j in range(63):
+#         x.append(i)
+#         y.append(j)
+# for k,W in all_Ws.items():
+#     plt.figure(figsize=(16, 8))
+#     for i in range(len(x)):
+#         plt.plot(x[i], y[i], '.k', ms = W[x[i],y[i]]*15)
+    # plt.show()
     # title(f'Synaptic Connections and Weights {k}')
     # xlabel('Source neuron position (um)')
     # ylabel('Target neuron position (um)');
 
 #%%
-sweep  = 'instant_sweep'
+# sweep  = 'instant_sweep'
 
 def performance_pull(sweep):
     """
@@ -110,6 +110,8 @@ def average_performance(all_accs):
     return all_avgs
 
 all_avgs = average_performance(all_accs)
+print(len(all_avgs['STSP_rnd=(rand0.3_geoNone_smNone)_N=135_IS=0.4_RS=0.3_ref=3.0_delay=1.5_U=0.6.npy']))
+
 
 #%%
 
@@ -168,7 +170,26 @@ def best_performance(all_avgs,sweep,write):
 write  = True
 ranked = best_performance(all_avgs,sweep,write)
 
-#print(ranked)
+def best_overall(all_avgs,sweep,write):
+    overall = {}
+    for file, avgs in all_avgs.items():
+        overall[file] = np.mean(avgs)
+    overall = dict(sorted(overall.items(), key=lambda item: item[1], reverse=True))
+
+    if write==True:
+        js = json.dumps(overall)
+        path = f'results/{sweep}/performance/overall-rankings.json'
+        f = open(path,"w")
+        f.write(js)
+        f.close()
+    return overall
+
+write  = True
+over_ranked = best_overall(all_avgs,sweep,write)
+
+from processing import print_rankings
+print_rankings(over_ranked,"Overall",9)
+print_rankings(ranked,"Performance",9)
 
 #%%
 
@@ -185,7 +206,7 @@ print(len(names))
 
 
 #%%
-def top_plot(names,sweep,save):
+def top_plot(names,patterns,sweep,save):
 
     """
     Plotting Top 5 Performers and Their Replicas
@@ -199,7 +220,6 @@ def top_plot(names,sweep,save):
 
     fig, axs = plt.subplots(5, 3,figsize=(24,14))
     plt.title("Title")
-    patterns=["A","B","C"]
 
     top_5 = names[:5]
     print(top_5)
@@ -224,7 +244,9 @@ def top_plot(names,sweep,save):
     plt.show()
 
 save=True
-top_plot(names,sweep,save)
+#patterns=["A","B","C"]
+patterns=["ZERO","ONE","TWO"]
+top_plot(names,patterns,sweep,save)
 
 
 
@@ -305,10 +327,11 @@ features = {
 
     'ref=0.0':0,
     'ref=1.5':0,
+    '111':0
 
 }
 
-lim = 50
+lim = 20
 
 feat = ranking_analysis(ranked,features,lim)
 

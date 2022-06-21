@@ -108,12 +108,18 @@ ECHO OFF
 @REM )
 
 @REM py -3.8 main.py --just_input True --length 100 --channels 700 --replicas 9 --patterns 3 --input_name "Heidelberg" --dir hei_repX
-FOR %%i IN (.15,2,3) DO (
+FOR %%i IN (.12,.14,.16,.18,.2,.3,.4,.5) DO (
     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
         FOR %%w IN (135) DO (
             FOR %%v IN (.3) DO (
-                py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_repX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
-                py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --rndp 0.3 --topology geo  --dir hei_repX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+                py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_X --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i
+                py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --rndp 111 --topology geo  --dir hei_X --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+
+                py -3.8 ./main.py --learning %%z  --neurons %%w --beta 0.25 --topology smw  --dir hei_X --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i
+                py -3.8 ./main.py --learning %%z  --neurons %%w --beta 0.25 --rndp 111 --topology smw  --dir hei_X --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+
+                py -3.8 ./main.py --learning %%z  --neurons %%w --topology rnd --rndp .3 --dir hei_X --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i
+                py -3.8 ./main.py --learning %%z  --neurons %%w --topology rnd --rndp .3 --beta 111 --dir hei_X --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
             )
         )
     )
