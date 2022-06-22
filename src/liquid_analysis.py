@@ -195,8 +195,8 @@ def path_stacks(sweep,classes,replicas,m1,m2,name):
     path_stacks = []
 
     groups={}
-    m_range = np.arange(m1,m2,1)[:10]
-    for m in range(m1,m2):
+    m_range = np.arange(m1,m2,1)[::10]
+    for m in m_range:
         print(m)
         for pat,label in enumerate(classes):
             groups[label]=[]
@@ -234,7 +234,8 @@ replicas=3
 components=3
 m1 = 0
 m2 = 699
-name = '\Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=1000_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6'
+#name = '\Maass_geo=(randNone_geo[4, 4, 4]_smNone)_N=1000_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6'
+name = '\STSP_rnd=(rand0.3_geoNone_smNone)_N=135_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6'
 
 
 path_sep_minus = path_stacks(sweep,classes,replicas,m1,m2,name)
@@ -291,7 +292,7 @@ def mean_separation(stacks,classes,replicas,write=True):
         dists=[]
         #print(list(means))
         dist_combos = list(itertools.combinations(list(means),2))
-        print(len(dist_combos))
+        #print(len(dist_combos))
         for c in dist_combos:
             dists.append(distance.euclidean(c[0],c[1]))
 
@@ -300,12 +301,12 @@ def mean_separation(stacks,classes,replicas,write=True):
         #         if i!=j:
         #             dists.append(distance.euclidean(means[i],means[j]))
         #print(len(reps))
-        #separation[key] = np.mean(dists) - np.mean(reps)
-        separation[key] = np.log(np.mean(dists))/np.log(np.mean(metric))
-        #separation[key] = np.log(np.mean(dists))/np.log(np.mean(rep))
+        ###separation[key] = np.mean(dists) - np.mean(reps)
+        ##separation[key] = np.log(np.mean(dists))/np.log(np.mean(metric))
+        ###separation[key] = np.log(np.mean(dists))/np.log(np.mean(reps))
         #separation[key] = np.mean(dists) - np.mean(metric)
-        #separation[key] = np.mean(dists)/np.mean(metric)
-        #separation[key] = np.mean(dists)
+        ###separation[key] = np.mean(dists)/np.mean(metric)
+        ##separation[key] = np.mean(dists)
         
 
     ranked_separation = dict(reversed(sorted(separation.items(), key=lambda item: item[1])))
@@ -327,8 +328,8 @@ ranked_separation = mean_separation(j_stacks,classes,replicas)
 item = f"{sweep}-rankings"
 ranked_performance = read_in_ranks(sweep,item)
 
-print_rankings(ranked_performance,"Performace",9)
-print_rankings(ranked_separation,"Separation",9)
+# print_rankings(ranked_performance,"Performace",9)
+# print_rankings(ranked_separation,"Separation",9)
 
 #%%
 
@@ -341,9 +342,13 @@ def ranking_comparison(dict1,dict2):
                 I.append(i)
                 J.append(j)
             #print(k1,k2)
-    return I,J
+    total_difference=0
+    for i in range(len(I)):
+        total_difference+= np.abs(I[i] - J[i])
+    print(total_difference)
+    return I,J,total_difference
 
-I,J = ranking_comparison(ranked_separation, ranked_performance)
+I,J,total_difference = ranking_comparison(ranked_separation, ranked_performance)
 
 #print(I,J)
 #%%
@@ -514,8 +519,8 @@ plt.show()
 
 def path_plotting(path_stacks):
 
-    # classes=["A","B","C"]
     classes=["A","B","C"]
+    labels=["ZERO","ONE","TWO"]
     replicas = 3
 
     fig = plt.figure()
@@ -554,7 +559,7 @@ def path_plotting(path_stacks):
 
 
     start = 50
-    until = 100
+    until = 690
     for i,(k,v) in enumerate(lines.items()):
         xs = []
         ys = []
@@ -568,23 +573,35 @@ def path_plotting(path_stacks):
             ys.append(c[1])
             zs.append(c[2])
         # print(zs)
-        plt.plot(xs[start:until],ys[start:until],zs[start:until], color=colors[i],label=classes[i])
+        plt.plot(xs[start:until],ys[start:until],zs[start:until], linewidth = 2,color=colors[i],label=labels[i])
 
 
-    plt.xlim(-1,1)
-    plt.ylim(-1,1)
+    plt.xlim(-1.5,1.5)
+    plt.ylim(-1.5,1.5)
     plt.legend()
-    ax.set_zlim(-1,1)
+    ax.set_zlim(-1.5,1.5)
 
-    ax.set_xlabel('Replica 0 Component')
-    ax.set_ylabel('Replica 1 Component')
-    ax.set_zlabel('Replica 2 Component')
+    ax.set_xlabel('Component 1')
+    ax.set_ylabel('Component 2')
+    ax.set_zlabel('Component 3')
+    plt.title(f'Average Paths in PC Space for 3 Examples of 3 Spoken Digits  \n STSP_rnd=(rand0.3_geoNone_smNone)_N=135_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6',fontsize = 22)
 
     plt.show()
 
 path_plotting(path_sep_minus)
 
-#print(path_sep_minus)
+print(path_sep_minus)
+#%%
+import pickle
+path = f'results/{sweep}/performance/'
+exp = 'STSP_rnd=(rand0.3_geoNone_smNone)_N=135_IS=0.2_RS=0.3_ref=3.0_delay=1.5_U=0.6'
+name = f'path_{exp}.json'
+# write_dict(config.__dict__,path,name)
+
+pick = f'{path}{name}.pickle'
+filehandler = open(pick, 'wb') 
+pickle.dump(path_sep_minus, filehandler)
+filehandler.close()
 
 
 #%%

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import itertools
 import string
 import pickle
+from sklearn.decomposition import PCA
 
 from processing import txt_to_spks,one_hot
 
@@ -152,7 +153,7 @@ class StateAnalysis():
         self.directory = f'results/{config.dir}/liquid/spikes'
 
     def print_config(self):
-        print(config.neurons)
+        print(config.__dict__)
 
     def analysis_loop(self):
         experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
@@ -162,37 +163,83 @@ class StateAnalysis():
         for exp in range(experiments):
             for pat,label in enumerate(config.classes):
                 for r in range(config.replicas):
-                    #i = exp*config.patterns*config.replicas + pat*config.replicas + r
-                    #print(i)
-                
                     filename = os.listdir(self.directory)[count]
                     file = os.path.join(self.directory, filename)
-
                     if (count) % 9 == 0:
                         a = file
                         b = '_pat'
                         pat_loc = [(i, i+len(b)) for i in range(len(a)) if a[i:i+len(b)] == b]
-
                         exp_name=file[len(self.directory)+1:pat_loc[0][0]]
-                        # exp_pcs[exp_name] = []
-                        print(f"{exp}-{count} experiment: {exp_name}")
+                        #print(f"{exp}-{count} experiment: {exp_name}")
 
-        #             dat,indices,times = txt_to_spks(file)
-        #             mat=one_hot(config.neurons,config.length,indices,times)
+                    #dat,indices,times = txt_to_spks(file)
+                    mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
+                    mat = np.load(mat_path, allow_pickle=True)
+
+                    
+                    pcs_times = []
+                    for t in range(config.length):
+                        slices = []
+                        step = 0
+                        pc_pats = []
+                        for p,pattern in enumerate(config.classes):
+                            norms = []
+                            for r in range(config.replicas):
+                                slice = mat[step][:,t]
+                                norm = np.array(slice) - np.mean(slice)
+                                norms.append(norm)
+                                step+=1
+                            norms = np.array(norms)
+                            pc_obj = PCA(n_components=3)
+                            pc_slice = pc_obj.fit_transform(norms)
+                            pc_pat = pc_slice[:,0]
+                            pc_pats.append(pc_pat)
+                        pcs_times.append(np.array(pc_pats))
+                    pcs_times = np.array(pcs_times)
+                    print(pcs_times.shape)
+
+
+                            
+
+
+                        # norms = []
+                        # for example in mat:
+                        #     slice=example[:,t]
+                        #     slices.append(slice)
+                        #     #print(len(slice))
+                        #     norm = np.array(slice) - np.mean(slice)
+                        #     norms.append(norm)
+                        # norms = np.array(norms)
+                        # print(norms[:3].shape)
+                        # pc_obj = PCA(n_components=3)
+                        # pc_slice = pc_obj.fit_transform(norms[:3])
+                        # print(pc_slice[:,0])
+                        # print(len(slices))
+                        
+
+                    # print(mat[example][n,t])
+
+
+
+
+                    break
+                break
+            break
+                    # count+=1
+
+
 
         #             spikes[f"{label}-{r}"] = (indices,times)
         #             mats[f"{label}-{r}"] = mat
-
-        #             count+=1
         # self.spikes = spikes
         # self.mats = mats
     
 
-sweep = "hei_X"
+sweep = "hei_phei"
 
 
 directory = f'results/{sweep}/configs'
-filename = os.listdir(directory)[1]
+filename = os.listdir(directory)[0]
 file = os.path.join(directory, filename)
 file_to_read = open(file, "rb")
 config = pickle.load(file_to_read)
@@ -210,7 +257,7 @@ show = False
 # classes = full_analysis.classes
 
 state_analysis = StateAnalysis(config)
-state_analysis.print_config()
+# state_analysis.print_config()
 state_analysis.analysis_loop()
 
 # full_analysis.performance_pull()

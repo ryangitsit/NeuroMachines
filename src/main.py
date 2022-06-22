@@ -67,9 +67,11 @@ def main():
         # save config
         path = f'results/{config.dir}/configs/'
         name = f'{config.full_loc}.json'
-        # write_dict(config.__dict__,path,name)
-
-        pick = f'{path}{name[:-5]}.pickle'
+        try:
+            os.makedirs(path)    
+        except FileExistsError:
+            pass
+        pick = f'{path}config_{name[:-5]}.pickle'
         filehandler = open(pick, 'wb') 
         pickle.dump(config, filehandler)
         filehandler.close()
