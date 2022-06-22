@@ -1,15 +1,21 @@
-from full_analysis import Analysis
+from full_analysis import PerformanceAnalysis
 import itertools
+import os
+import pickle
 
 def main():
-    sweep = "hei_X"
-    type = "Heidelberg"
-    patterns = 3
-    replicas = 3
-    save = True
-    show = False
+    sweep = "hei_phei"
+    save = False
+    show = True
 
-    full_analysis = Analysis(sweep,type,patterns,replicas,save,show)
+    directory = f'results/{sweep}/configs'
+    filename = os.listdir(directory)[0]
+    file = os.path.join(directory, filename)
+    file_to_read = open(file, "rb")
+    config = pickle.load(file_to_read)
+    file_to_read.close()
+
+    full_analysis = PerformanceAnalysis(config,save,show)
     full_analysis.performance_pull()
     full_analysis.accs_plots()
     finals, totals = full_analysis.rankings()

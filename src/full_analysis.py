@@ -30,19 +30,14 @@ Plan:
 # Determine coherent expansion coefficient of input
 
 class PerformanceAnalysis():
-    def __init__(self,sweep,type,patterns,replicas,save,show):
-        self.sweep = sweep
-        self.type = type
-        self.patterns = patterns
-        self.replicas = replicas
+    def __init__(self,config,save,show):
+        self.sweep = config.dir
+        self.type = config.input_name
+        self.patterns = config.patterns
+        self.replicas = config.replicas
+        self.classes = config.classes
         self.save = save
         self.show = show
-        if self.type == "Heidelberg":
-            names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','NULL','EINS','ZWEI','DREI','VIER','FUNF','SECHS','SEBEN','ACHT','NEUN','ZEHN']
-            self.classes = names[:self.patterns]
-        elif self.type == "Poisson":
-            names = string.ascii_letters[26:52]
-            self.classes = names[:self.patterns]
 
     def __str__(self):
         return f"Dataset: \n{self.__dict__}"
@@ -129,7 +124,7 @@ class PerformanceAnalysis():
             for j,name in enumerate(top_5):
                 #print(name+suffix)
                 dat, indices, times = txt_to_spks(prefix+name+suffix)
-                axs[j, i].plot(times, indices, '.k', ms=.7)
+                axs[j, i].plot(times, indices, '.k', ms=.1)
                 axs[j, i].set_title(name, size=8)
         for ax in axs.flat:
             ax.set(xlabel='time (ms)', ylabel='neuron index')
@@ -147,7 +142,7 @@ class PerformanceAnalysis():
 
 
 class StateAnalysis():
-    def __init__(self,config):
+    def __init__(self,config,save,show):
         self.save = save
         self.show = show
         self.directory = f'results/{config.dir}/liquid/spikes'
@@ -156,10 +151,11 @@ class StateAnalysis():
         print(config.__dict__)
 
     def analysis_loop(self):
-        experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
+        np.seterr(divide='ignore', invalid='ignore')
+        experiments = 1 #int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
         count = 0
-        spikes = {}
-        mats = {}
+        self.MATs = {}
+        self.PCs = {}
         for exp in range(experiments):
             for pat,label in enumerate(config.classes):
                 for r in range(config.replicas):
@@ -170,76 +166,133 @@ class StateAnalysis():
                         b = '_pat'
                         pat_loc = [(i, i+len(b)) for i in range(len(a)) if a[i:i+len(b)] == b]
                         exp_name=file[len(self.directory)+1:pat_loc[0][0]]
-                        #print(f"{exp}-{count} experiment: {exp_name}")
+                        print(f"{exp}-{count} experiment: {exp_name}")
+
+                        mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
+                        mat = np.load(mat_path, allow_pickle=True)
+
+                        pcs_times = []
+                        for t in range(config.length):
+                            step = 0
+                            pc_pats = []
+                            for p,pattern in enumerate(config.classes):
+                                norms = []
+                                for r in range(config.replicas):
+                                    slice = mat[step][:,t]
+                                    norm = np.array(slice) - np.mean(slice)
+                                    norms.append(norm)
+                                    step+=1
+                                norms = np.array(norms)
+                                pc_obj = PCA(n_components=3)
+                                pc_slice = pc_obj.fit_transform(norms)
+                                pc_pat = pc_slice[:,0]
+                                pc_pats.append(pc_pat)
+                            pcs_times.append(np.array(pc_pats))
+                        pcs_times = np.array(pcs_times)
+
+                        # pcs_times = []
+                        # for t in range(200,201): #range(config.length):
+                        #     step = 0
+                        #     pc_pats = []
+                        #     norms = []
+                        #     for p,pattern in enumerate(config.classes):
+                        #         print(p)
+                        #         # norms = []
+                        #         for r in range(config.replicas):
+                        #             print(r)
+                        #             slice = mat[step][:,t]
+                        #             norm = np.array(slice) - np.mean(slice)
+                        #             norms.append(norm)
+                        #             step+=1
+                        #     norms = np.array(norms)
+                        #     pc_obj = PCA(n_components=3)
+                        #     pc_slice = pc_obj.fit_transform(norms)
+                        #     print(pc_slice)
+                        #     pc_pat = pc_slice[:,0]
+                        #     pc_pats.append(pc_pat)
+
+                        #     pcs_times.append(np.array(pc_pats))
+                        # pcs_times = np.array(pcs_times)
+
+                        self.MATs[exp_name] = mat
+                        self.PCs[exp_name] = pcs_times
 
                     #dat,indices,times = txt_to_spks(file)
-                    mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
-                    mat = np.load(mat_path, allow_pickle=True)
+                    count+=1
 
-                    
-                    pcs_times = []
-                    for t in range(config.length):
-                        slices = []
-                        step = 0
-                        pc_pats = []
-                        for p,pattern in enumerate(config.classes):
-                            norms = []
-                            for r in range(config.replicas):
-                                slice = mat[step][:,t]
-                                norm = np.array(slice) - np.mean(slice)
-                                norms.append(norm)
-                                step+=1
-                            norms = np.array(norms)
-                            pc_obj = PCA(n_components=3)
-                            pc_slice = pc_obj.fit_transform(norms)
-                            pc_pat = pc_slice[:,0]
-                            pc_pats.append(pc_pat)
-                        pcs_times.append(np.array(pc_pats))
-                    pcs_times = np.array(pcs_times)
-                    print(pcs_times.shape)
+        return self.MATs, self.PCs
 
+    def pc_plot(self,key,moment):
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        fig.set_figheight(15)
+        fig.set_figwidth(15)
 
-                            
+        #markers = ["$A$","$B$","$C$"]
+        markers = ["$ZERO$","$ONE$","$TWO$"]
+        colors = ['r','g','b']
 
+        for i,position in enumerate(self.PCs[key][moment]):
+            ax.scatter(position[0],position[1],position[2],marker=markers[i],color=colors[i],s=750,label=config.classes[i])
 
-                        # norms = []
-                        # for example in mat:
-                        #     slice=example[:,t]
-                        #     slices.append(slice)
-                        #     #print(len(slice))
-                        #     norm = np.array(slice) - np.mean(slice)
-                        #     norms.append(norm)
-                        # norms = np.array(norms)
-                        # print(norms[:3].shape)
-                        # pc_obj = PCA(n_components=3)
-                        # pc_slice = pc_obj.fit_transform(norms[:3])
-                        # print(pc_slice[:,0])
-                        # print(len(slices))
-                        
+        plt.xlim(-5,5)
+        plt.ylim(-5,5)
+        ax.set_zlim(-5,5)
+        plt.legend()
 
-                    # print(mat[example][n,t])
+        # ax.set_xlabel('Replica 0 Component')
+        # ax.set_ylabel('Replica 1 Component')
+        # ax.set_zlabel('Replica 2 Component')
+        plt.title("Positions in PCA Space",fontsize=24)
+        if save == True:
+            dirName = f"results/{config.dir}/analysis/PCs/{key}/"
+            try:
+                os.makedirs(dirName)    
+            except FileExistsError:
+                pass
+            plt.savefig(f'results/{config.dir}/analysis/PCs/{key}PC_t={moment}.png')
+        if show == True:
+            plt.show()
+        plt.close()
 
+    def path_plot(self,key):
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        fig.set_figheight(25)
+        fig.set_figwidth(25)
 
+        #markers = ["$A$","$B$","$C$"]
+        markers = ["$ZERO$","$ONE$","$TWO$"]
+        labels=["ZERO","ONE","TWO"]
+        colors = ['r','g','b']
+        x = []
+        y = []
+        z = []
 
+        for i in range(config.patterns):
+            xs = self.PCs[key][:,i][:,0]
+            ys = self.PCs[key][:,i][:,1]
+            zs = self.PCs[key][:,i][:,2]
+            plt.plot(xs,ys,zs, linewidth = .5,color=colors[i],label=labels[i])
 
-                    break
-                break
-            break
-                    # count+=1
-
-
-
-        #             spikes[f"{label}-{r}"] = (indices,times)
-        #             mats[f"{label}-{r}"] = mat
-        # self.spikes = spikes
-        # self.mats = mats
+        plt.xlim(-5,5)
+        plt.ylim(-5,5)
+        ax.set_zlim(-5,5)
+        plt.legend()
+        plt.title(f"Positions in PCA Space Traced Across Time\n{key}",fontsize=24)
+        dirName = f"results/{config.dir}/analysis/paths/"
+        try:
+            os.makedirs(dirName)    
+        except FileExistsError:
+            pass
+        plt.savefig(f'results/{config.dir}/analysis/paths/paths_{key}.png')
+        plt.close()
     
 
 sweep = "hei_phei"
 
-
 directory = f'results/{sweep}/configs'
-filename = os.listdir(directory)[0]
+filename = os.listdir(directory)[1]
 file = os.path.join(directory, filename)
 file_to_read = open(file, "rb")
 config = pickle.load(file_to_read)
@@ -256,9 +309,16 @@ show = False
 # full_analysis = PerformanceAnalysis(sweep,type,patterns,replicas,save,show)
 # classes = full_analysis.classes
 
-state_analysis = StateAnalysis(config)
-# state_analysis.print_config()
-state_analysis.analysis_loop()
+state_analysis = StateAnalysis(config,save,show)
+
+MATs, PCs = state_analysis.analysis_loop()
+
+# for t in range(config.length):
+#     state_analysis.pc_plot(list(PCs)[23],t)
+    # state_analysis.pc_plot('Maass_geo=(randNone_geo[9, 5, 3]_smNone)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=1.5_U=0.6',t)
+
+# for i in range(len(PCs)):
+#     state_analysis.path_plot(list(PCs)[i])
 
 # full_analysis.performance_pull()
 # full_analysis.accs_plots()

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import json
+
 from scipy.spatial import distance
 from sklearn.preprocessing import StandardScaler
 from processing import *
@@ -12,13 +13,13 @@ File description
 """
 #%%
 
-sweep = 'hei_X'
+sweep = 'hei_phei'
 #classes=["A","B","C"]
 classes=["ZERO","ONE","TWO"]
 replicas = 3
 components = 3
 moment=490
-write = True
+write = False
 
 #%%
 
@@ -87,7 +88,7 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
     length = int(np.ceil(np.max(times)))
     neurons = np.max(indices) + 1
 
-    experiments = int(len(os.listdir(directory))/(len(classes)*replicas))
+    experiments = 1 #int(len(os.listdir(directory))/(len(classes)*replicas))
 
     exp_pcs = {}
     stacks = {}
@@ -128,6 +129,7 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
                 for n in range(neurons):
                     slice.append(mat[n][moment])
                 groups[label].append(slice)
+                print(np.array(groups[label]).shape)
 
         # generate 3 pcs for each replica and class
         pcs = pcs_all(groups) # Legacy
