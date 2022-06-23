@@ -207,7 +207,7 @@ class LiquidState():
         else:
             print("Input skipped")
         
-        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=1*us)
+        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=100*us)
         
         SP = Synapses(SGG, G, on_pre='v+=1')
         SP.connect('i!=j', p=self.input_sparsity)
@@ -260,8 +260,8 @@ class LiquidState():
                     timed = inputs.times[example]*ms
                 else:
                     print("Input skipped")
-                DT = 1
-                print(f"--- dt = {DT} ---")
+                DT = 100
+                
                 SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=DT*us)
             
                 SP = Synapses(SGG, G, on_pre='v+=1', dt=DT*us)
@@ -326,7 +326,6 @@ class ReadoutMap():
         self.full_train = []
         # for lab in range(len(labels)):
         #     full_labels += [labels[lab]]*int(self.T)
-
         # full_train = []
         for i in range(len(labels)):
             self.full_labels += [labels[i]]*int(self.T)
@@ -343,7 +342,6 @@ class ReadoutMap():
         self.test_range = int(config.patterns*len(self.full_train)/self.len_labels)
 
         print('Train/test split: ',self.train_range,self.test_range)
-    
 
         # return self.train_range, self.test_range
 

@@ -5,6 +5,7 @@ import itertools
 import string
 import pickle
 from sklearn.decomposition import PCA
+from PIL import Image
 
 from processing import txt_to_spks,one_hot
 
@@ -105,6 +106,7 @@ class PerformanceAnalysis():
         print("\n")
 
     def performance_statistics(self,dict,lim):
+        self.lim = lim
         hyper_parameters = {
             "learning":[],
             "topology":[],
@@ -125,7 +127,7 @@ class PerformanceAnalysis():
             file_to_read.close()
             for param in hyper_parameters.keys():
                 hyper_parameters[param].append(experiment.__dict__[param])
-        
+        self.hyperparams = hyper_parameters
         print(f"Hyper Parameter Occurences in Top {lim} Performers")
         for k,v in hyper_parameters.items():
             if k == 'dims':
@@ -138,6 +140,7 @@ class PerformanceAnalysis():
             print(f"{k} => {occ}")
         
         hyper_combos = list(itertools.combinations(list(hyper_parameters),2))
+        self.combos = {}
         for param_combo in hyper_combos:
             sets = []
             for i in range(lim):
@@ -148,16 +151,47 @@ class PerformanceAnalysis():
                 occ_combos[u] = sets.count(u)
             print(param_combo)
             for k,v in occ_combos.items():
-                print("   ",k," - ",v)
+                if str(k[0]) != 'None' and str(k[1]) != 'None':
+                    print("   ",k," - ",v)
+            self.combos[param_combo] = occ_combos
 
-
-
-
+    def hist_ranked(self):
+        labels = list(set(self.hyperparams["learning"]))
+        dict = self.combos[list(self.combos)[0]]
+        print(dict)
         
+        RND=[0,0,0,0]
+        GEO=[0,0,0,0]
+        SMW=[0,0,0,0]
+        for i,l in enumerate(labels):
+            for k,v in dict.items():
+                if k[0] == l:
+                    if k[1] == 'geo':
+                        GEO[i]+=v*100/self.lim
+                    if k[1] == 'rnd':
+                        RND[i]+=v*100/self.lim
+                    if k[1] == 'smw':
+                        SMW[i]+=v*100/self.lim
+
+        x = np.arange(len(labels)) 
+        width = 0.18  
+        plt.figure(figsize=(7,7))
+        plt.style.use('seaborn-muted')
+
+        rects1 = plt.bar(x - width-.01, RND, width, label='random')
+        rects2 = plt.bar(x, GEO, width, label='geometric')
+        rects3 = plt.bar(x + width+.01, SMW, width, label='small-world')
+
+        plt.ylabel('Percent Present',fontsize=18)
+        plt.title(f'Configurations in top {self.lim} Performers',fontsize=22)
+        plt.xticks(x, labels,fontsize=18)
+        plt.legend(fontsize=20) # using a size in points
+        plt.legend(fontsize="x-large") # using a named size
+        plt.tight_layout()
+        plt.show()
 
 
     def top_plot(self):
-
         """
         Plotting Top 5 Performers and Their Replicas
         - Create a subplot grid
@@ -177,7 +211,7 @@ class PerformanceAnalysis():
                 #print(name+suffix)
                 dat, indices, times = txt_to_spks(prefix+name+suffix)
                 axs[j, i].plot(times, indices, '.k', ms=.1)
-                axs[j, i].set_title(name, size=8)
+                axs[j, i].set_title(name, size=6)
         for ax in axs.flat:
             ax.set(xlabel='time (ms)', ylabel='neuron index')
         for ax in axs.flat:
@@ -427,61 +461,77 @@ class StateAnalysis():
             plt.show()
         plt.close()
 
+class MetaAnalysis():
+    def __init__(self,config,save,show):
+        self.save = save
+        self.show = show
+        self.directory = f'results/{config.dir}/'
 
-# sweep = "hei_phei"
+    def show_all(self,key):
+        import cv2
+        for pat in config.classes:
+            plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{pat}_rep0.png')
+            plot.show()
+        plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
+        plot.show()
+        plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
+        plot.show()
 
-# directory = f'results/{sweep}/configs'
-# filename = os.listdir(directory)[1]
-# file = os.path.join(directory, filename)
-# file_to_read = open(file, "rb")
-# config = pickle.load(file_to_read)
-# file_to_read.close()
+        # img1 = cv2.imread(f'{self.directory}/analysis/full_paths/paths_{key}.png')
+        # img2 = cv2.imread(f'{self.directory}/performance/plots/{key}_performance.png')
+        # print(img1.shape, img2.shape)
+        # movex=1000
+        # movey=1000
+        # img1 = img1[movex:movex+img2.shape[0],movey:movey+img2.shape[1]]
+        # print(img1.shape)
+        # horz = np.concatenate((img1, img2), axis=1)
+        # cv2.imshow('Title', horz)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
-# # #print(config.__dict__)
 
 
-# # # type = "Heidelberg"
-# # # patterns = 3
-# # # replicas = 3
-# save = False
-# show = False
-# full_analysis = PerformanceAnalysis(config,save,show)
-# full_analysis.performance_pull()
-# finals, totals = full_analysis.rankings()
-# full_analysis.performance_statistics(finals,100)
+sweep = "hei_phei"
 
-# # classes = full_analysis.classes
+directory = f'results/{sweep}/configs'
+filename = os.listdir(directory)[1]
+file = os.path.join(directory, filename)
+file_to_read = open(file, "rb")
+config = pickle.load(file_to_read)
+file_to_read.close()
+save = False
+show = False
+
+full_analysis = PerformanceAnalysis(config,save,show)
+full_analysis.performance_pull()
+finals, totals = full_analysis.rankings()
+# full_analysis.performance_statistics(finals,20)
+# full_analysis.hist_ranked()
+
+top_finals=dict(itertools.islice(finals.items(),8))
+top_totals=dict(itertools.islice(totals.items(),8))
+
+meta = MetaAnalysis(config,save,show)
+for k in top_finals.keys():
+    meta.show_all(k)
+
+for k in top_totals.keys():
+    meta.show_all(k)
 
 # state_analysis = StateAnalysis(config,save,show)
-
 # MATs, PCs = state_analysis.analysis_loop()
 
 # # key = 'Maass_geo=(randNone_geo[45, 3, 1]_smNone)_N=135_IS=0.17_RS=0.3_ref=3.0_delay=1.5_U=0.6'
-
 # for i in range(len(PCs)):
 #     state_analysis.full_path_plot(list(PCs)[i])
-
 # for t in range(config.length):
 #     state_analysis.full_pc_plot(key,t)
-
 # for t in range(config.length):
 #     state_analysis.pc_plot(list(PCs)[23],t)
     # state_analysis.pc_plot('Maass_geo=(randNone_geo[9, 5, 3]_smNone)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=1.5_U=0.6',t)
-
 # for i in range(len(PCs)):
 #     state_analysis.path_plot(list(PCs)[i])
 
-# full_analysis.performance_pull()
-# full_analysis.accs_plots()
-# finals, totals = full_analysis.rankings()
-# full_analysis.print_rankings(finals,"Final Performance",10)
-# full_analysis.print_rankings(totals,"Total Performance",10)
-
-# top_finals=dict(itertools.islice(finals.items(),20))
-# top_totals=dict(itertools.islice(totals.items(),20))
-# full_analysis.accs_plots(top_totals)
-# full_analysis.accs_plots(top_finals)
-# full_analysis.top_plot()
 
 
 
