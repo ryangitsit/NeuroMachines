@@ -125,9 +125,9 @@ ECHO OFF
 @REM     )
 @REM )
 
-
+@REM ,.18,.19,.2,.25,.5)
 @REM py -3.8 main.py --just_input True --length 100 --channels 700 --replicas 9 --patterns 3 --input_name "Heidelberg" --dir hei_repX
-FOR %%i IN (.17,.18,.19,.2,.25,.5) DO (
+FOR %%i IN (.17) DO (
     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
         FOR %%y IN (0, 3) DO (
             FOR %%x IN (0.0, 1.5) DO (

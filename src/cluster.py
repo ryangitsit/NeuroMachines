@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 
-sweep = 'hei_X'
+sweep = 'hei_phei'
 moment = 490
 
 ## PCs

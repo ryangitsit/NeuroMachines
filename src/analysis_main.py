@@ -9,7 +9,7 @@ def main():
     show = True
 
     directory = f'results/{sweep}/configs'
-    filename = os.listdir(directory)[0]
+    filename = os.listdir(directory)[1]
     file = os.path.join(directory, filename)
     file_to_read = open(file, "rb")
     config = pickle.load(file_to_read)

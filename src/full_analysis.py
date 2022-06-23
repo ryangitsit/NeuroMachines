@@ -104,6 +104,58 @@ class PerformanceAnalysis():
                 print(np.round(value,4), " - ", key)
         print("\n")
 
+    def performance_statistics(self,dict,lim):
+        hyper_parameters = {
+            "learning":[],
+            "topology":[],
+            "input_sparsity":[],
+            "res_sparsity":[],
+            "rndp":[],
+            "dims":[],
+            "beta":[],
+            "refractory":[],
+            "delay":[]
+            }
+        for k in list(dict)[:lim]:
+            directory = f'results/{config.dir}/configs'
+            filename = f'config_{k}.pickle'
+            file = os.path.join(directory, filename)
+            file_to_read = open(file, "rb")
+            experiment = pickle.load(file_to_read)
+            file_to_read.close()
+            for param in hyper_parameters.keys():
+                hyper_parameters[param].append(experiment.__dict__[param])
+        
+        print(f"Hyper Parameter Occurences in Top {lim} Performers")
+        for k,v in hyper_parameters.items():
+            if k == 'dims':
+                for i in range(len(v)):
+                    v[i] = str(v[i])
+            uniques = set(v)
+            occ = {}
+            for u in uniques:
+                occ[u] = v.count(u)
+            print(f"{k} => {occ}")
+        
+        hyper_combos = list(itertools.combinations(list(hyper_parameters),2))
+        for param_combo in hyper_combos:
+            sets = []
+            for i in range(lim):
+                sets.append((hyper_parameters[param_combo[0]][i],hyper_parameters[param_combo[1]][i]))
+            unique_combos = set(sets)
+            occ_combos = {}
+            for u in unique_combos:
+                occ_combos[u] = sets.count(u)
+            print(param_combo)
+            for k,v in occ_combos.items():
+                print("   ",k," - ",v)
+
+
+
+
+        
+
+
     def top_plot(self):
 
         """
@@ -112,7 +164,7 @@ class PerformanceAnalysis():
         - For each pattern replica
             - For each Top5 performer
                 - Convert top performing names to paths
-                - Pull the appropriate spikea
+                - Pull the appropriate spikes
                 - Raster plot them into the subplot grid
         """
         fig, axs = plt.subplots(5, 3,figsize=(24,14))
@@ -152,7 +204,7 @@ class StateAnalysis():
 
     def analysis_loop(self):
         np.seterr(divide='ignore', invalid='ignore')
-        experiments = 1 #int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
+        experiments = 300 #int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
         count = 0
         self.MATs = {}
         self.PCs = {}
@@ -171,49 +223,45 @@ class StateAnalysis():
                         mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
                         mat = np.load(mat_path, allow_pickle=True)
 
+                        # # Across each replica within a pattern
+                        # pcs_times = []
+                        # for t in range(config.length):
+                        #     step = 0
+                        #     pc_pats = []
+                        #     for p,pattern in enumerate(config.classes):
+                        #         norms = []
+                        #         for r in range(config.replicas):
+                        #             slice = mat[step][:,t]
+                        #             norm = np.array(slice) - np.mean(slice)
+                        #             norms.append(norm)
+                        #             step+=1
+                        #         norms = np.array(norms)
+                        #         pc_obj = PCA(n_components=3)
+                        #         pc_slice = pc_obj.fit_transform(norms)
+                        #         pc_pat = pc_slice[:,0]
+                        #         pc_pats.append(pc_pat)
+                        #     pcs_times.append(np.array(pc_pats))
+                        # pcs_times = np.array(pcs_times)
+
+                        # Across all
                         pcs_times = []
                         for t in range(config.length):
                             step = 0
                             pc_pats = []
+                            norms = []
                             for p,pattern in enumerate(config.classes):
-                                norms = []
+                                # norms = []
                                 for r in range(config.replicas):
                                     slice = mat[step][:,t]
                                     norm = np.array(slice) - np.mean(slice)
                                     norms.append(norm)
                                     step+=1
-                                norms = np.array(norms)
-                                pc_obj = PCA(n_components=3)
-                                pc_slice = pc_obj.fit_transform(norms)
-                                pc_pat = pc_slice[:,0]
-                                pc_pats.append(pc_pat)
-                            pcs_times.append(np.array(pc_pats))
+                            norms = np.array(norms)
+                            pc_obj = PCA(n_components=3)
+                            pc_slice = pc_obj.fit_transform(norms)
+                            #print(pc_slice)
+                            pcs_times.append(np.array(pc_slice))
                         pcs_times = np.array(pcs_times)
-
-                        # pcs_times = []
-                        # for t in range(200,201): #range(config.length):
-                        #     step = 0
-                        #     pc_pats = []
-                        #     norms = []
-                        #     for p,pattern in enumerate(config.classes):
-                        #         print(p)
-                        #         # norms = []
-                        #         for r in range(config.replicas):
-                        #             print(r)
-                        #             slice = mat[step][:,t]
-                        #             norm = np.array(slice) - np.mean(slice)
-                        #             norms.append(norm)
-                        #             step+=1
-                        #     norms = np.array(norms)
-                        #     pc_obj = PCA(n_components=3)
-                        #     pc_slice = pc_obj.fit_transform(norms)
-                        #     print(pc_slice)
-                        #     pc_pat = pc_slice[:,0]
-                        #     pc_pats.append(pc_pat)
-
-                        #     pcs_times.append(np.array(pc_pats))
-                        # pcs_times = np.array(pcs_times)
-
                         self.MATs[exp_name] = mat
                         self.PCs[exp_name] = pcs_times
 
@@ -255,6 +303,47 @@ class StateAnalysis():
             plt.show()
         plt.close()
 
+    def full_pc_plot(self,key,moment):
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        fig.set_figheight(15)
+        fig.set_figwidth(15)
+
+        #markers = ["$A$","$B$","$C$"]
+        markers = ["$ZERO$","$ONE$","$TWO$"]
+        colors = ['r','g','b']
+
+        # for i,position in enumerate(self.PCs[key][moment]):
+        count=0
+        for i,pat in enumerate(config.classes):
+            pat_pos = []
+            for j in range(config.replicas):
+                position = self.PCs[key][moment][count]
+                ax.scatter(position[0],position[1],position[2],marker=markers[i],color=colors[i],s=750,label=config.classes[i])
+                pat_pos.append(position)
+                count+=1
+            mean_pat = np.mean(np.array(pat_pos),axis=0)
+            ax.scatter(mean_pat[0],mean_pat[1],mean_pat[2],marker='.',color=colors[i],s=350,label=config.classes[i])
+
+        plt.xlim(-5,5)
+        plt.ylim(-5,5)
+        ax.set_zlim(-5,5)
+        # plt.legend()
+        ax.set_xlabel('Component 1')
+        ax.set_ylabel('Component 2')
+        ax.set_zlabel('Component 3')
+        plt.title("Positions in PCA Space",fontsize=24)
+        if save == True:
+            dirName = f"results/{config.dir}/analysis/full_PCs/{key}"
+            try:
+                os.makedirs(dirName)    
+            except FileExistsError:
+                pass
+            plt.savefig(f'results/{config.dir}/analysis/full_PCs/{key}/PC_t={moment}.png')
+        if show == True:
+            plt.show()
+        plt.close()
+
     def path_plot(self,key):
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
@@ -287,31 +376,93 @@ class StateAnalysis():
             pass
         plt.savefig(f'results/{config.dir}/analysis/paths/paths_{key}.png')
         plt.close()
-    
 
-sweep = "hei_phei"
+    def full_path_plot(self,key):
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        fig.set_figheight(25)
+        fig.set_figwidth(25)
 
-directory = f'results/{sweep}/configs'
-filename = os.listdir(directory)[1]
-file = os.path.join(directory, filename)
-file_to_read = open(file, "rb")
-config = pickle.load(file_to_read)
-file_to_read.close()
+        #markers = ["$A$","$B$","$C$"]
+        markers = ["$ZERO$","$ONE$","$TWO$"]
+        labels=["ZERO","ONE","TWO"]
+        colors = ['r','g','b']
 
-#print(config.__dict__)
+        x =  [[] for _ in range(config.patterns)]
+        y = [[] for _ in range(config.patterns)]
+        z = [[] for _ in range(config.patterns)]
+
+        for t in range(config.length):
+            count=0
+            for i,pat in enumerate(config.classes):
+                pat_pos = []
+                for j in range(config.replicas):
+                    position = self.PCs[key][t][count]
+                    pat_pos.append(position)
+                    count+=1
+                mean_pat = np.mean(np.array(pat_pos),axis=0)
+                x[i].append(mean_pat[0])
+                y[i].append(mean_pat[1])
+                z[i].append(mean_pat[2])
+
+        for i in range(config.patterns):
+            xs = x[i]
+            ys = y[i]
+            zs = z[i]
+            plt.plot(xs,ys,zs, linewidth = .5,color=colors[i],label=labels[i])
+
+        plt.xlim(-5,5)
+        plt.ylim(-5,5)
+        ax.set_zlim(-5,5)
+        plt.legend()
+        plt.title(f"Average Replica Positions in PCA Space Traced Across Time\n{key}",fontsize=24)
+        if save == True:
+            dirName = f"results/{config.dir}/analysis/full_paths/"
+            try:
+                os.makedirs(dirName)    
+            except FileExistsError:
+                pass
+            plt.savefig(f'results/{config.dir}/analysis/full_paths/paths_{key}.png')
+        if show == True:
+            plt.show()
+        plt.close()
 
 
-# type = "Heidelberg"
-# patterns = 3
-# replicas = 3
-save = False
-show = False
-# full_analysis = PerformanceAnalysis(sweep,type,patterns,replicas,save,show)
-# classes = full_analysis.classes
+# sweep = "hei_phei"
 
-state_analysis = StateAnalysis(config,save,show)
+# directory = f'results/{sweep}/configs'
+# filename = os.listdir(directory)[1]
+# file = os.path.join(directory, filename)
+# file_to_read = open(file, "rb")
+# config = pickle.load(file_to_read)
+# file_to_read.close()
 
-MATs, PCs = state_analysis.analysis_loop()
+# # #print(config.__dict__)
+
+
+# # # type = "Heidelberg"
+# # # patterns = 3
+# # # replicas = 3
+# save = False
+# show = False
+# full_analysis = PerformanceAnalysis(config,save,show)
+# full_analysis.performance_pull()
+# finals, totals = full_analysis.rankings()
+# full_analysis.performance_statistics(finals,100)
+
+# # classes = full_analysis.classes
+
+# state_analysis = StateAnalysis(config,save,show)
+
+# MATs, PCs = state_analysis.analysis_loop()
+
+# # key = 'Maass_geo=(randNone_geo[45, 3, 1]_smNone)_N=135_IS=0.17_RS=0.3_ref=3.0_delay=1.5_U=0.6'
+
+# for i in range(len(PCs)):
+#     state_analysis.full_path_plot(list(PCs)[i])
+
+# for t in range(config.length):
+#     state_analysis.full_pc_plot(key,t)
 
 # for t in range(config.length):
 #     state_analysis.pc_plot(list(PCs)[23],t)

@@ -185,8 +185,8 @@ def analysis_loop(sweep,classes,replicas,moment,components,write):
 
 spikes, groups, exp_pcs, stacks = analysis_loop(sweep,classes,replicas,moment,components,write)
 #%%
-print(len(list(stacks)))
-print()
+print(stacks)
+
 #%%
 def path_stacks(sweep,classes,replicas,m1,m2,name):
 

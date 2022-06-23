@@ -1,6 +1,6 @@
 from LSM import *
 from arg_parser import setup_argument_parser
-from processing import write_dict
+import os
 import pickle
 
 def main():
@@ -47,6 +47,7 @@ def main():
             names = string.ascii_letters[26:52]
         config.classes=names[:config.patterns]
         print(config.classes)
+        
         dataset = inputs.read_data(config)
         print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
         for k,v in dataset.items():
