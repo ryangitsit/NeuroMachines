@@ -135,13 +135,13 @@ def reservoir(self):
                 G.ref[pre] = self.refractory*ms
         S.delay = self.delay*ms
 
-    W = np.zeros((self.N,self.N))
-    for i in range(self.N):
-        for j in range(self.N):
-            if (len(S.w[i,j])) > 0:
-                W[i,j] = S.w[i,j]
-    print(W.shape)
-    
+    # W = np.zeros((self.N,self.N))
+    # for i in range(self.N):
+    #     for j in range(self.N):
+    #         if (len(S.w[i,j])) > 0:
+    #             W[i,j] = S.w[i,j]
+    # print(W.shape)
+    W = 0
     return G, S, W
 
 

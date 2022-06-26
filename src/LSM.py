@@ -232,36 +232,38 @@ class LiquidState():
         nets = Network(G, S)
         nets.store()
 
-        dirName = f"results/{self.dir}/weights/"
-        try:
-            os.makedirs(dirName)    
-        except FileExistsError:
-            pass
-        with open(f'results/{self.dir}/weights/{self.full_loc}.npy', 'wb') as f:
-            np.save(f, W, allow_pickle=True)
+        # dirName = f"results/{self.dir}/weights/"
+        # try:
+        #     os.makedirs(dirName)    
+        # except FileExistsError:
+        #     pass
+        # with open(f'results/{self.dir}/weights/{self.full_loc}.npy', 'wb') as f:
+        #     np.save(f, W, allow_pickle=True)
 
-        for k,v in dataset.items():
-            for r,rep in enumerate(v):
-                item = f'pat{k}_rep{r}'
-                print(f"\n --- Responding to pattern {k}, replica {r} --- \n")
+        mats = []
+        for pat,v in dataset.items():
+            for rep,replica in enumerate(v):
+                item = f'pat{pat}_rep{rep}'
+                print(f"\n --- Responding to pattern {pat}, replica {rep} --- \n")
                 loc_liq = f'{self.dir}/liquid'
                 item_liq = f'{self.full_loc}_{item}'
                 # result = self.simulate(inputs,rep,nets,G,S)
                 # indices = result[0]
                 # times = result[1]
 
-
                 #################
                 #################
                 example = rep
                 if inputs.input_name == 'Poisson':
                     timed = inputs.times[example]*ms
+                    DT = 1
                 elif inputs.input_name =='Heidelberg':
                     timed = inputs.times[example]*ms
+                    DT = 100
                 else:
                     print("Input skipped")
-                DT = 100
-                
+
+
                 SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=DT*us)
             
                 SP = Synapses(SGG, G, on_pre='v+=1', dt=DT*us)
@@ -272,13 +274,20 @@ class LiquidState():
                 nets.run((self.T)*ms)
                 indices = np.array(spikemon.i)
                 times = np.array(spikemon.t/ms)
+                mats.append(one_hot(self.N,self.T,np.array(indices)[:],times[:]))
                 nets.remove(SGG,SP,spikemon)
                 nets.restore()
                 #################
                 #################
-
-
                 save_spikes(self.N,inputs.length,times,indices,loc_liq,item_liq)
+        storage_mats = np.array(mats)
+        dirName = f"results/{self.dir}/performance/liquids/encoded/"
+        try:
+            os.makedirs(dirName)    
+        except FileExistsError:
+            pass
+        with open(f'results/{self.dir}/performance/liquids/encoded/mat_{self.full_loc}.npy', 'wb') as f:
+            np.save(f, storage_mats, allow_pickle=True)
 
 
 # liquids = LiquidState(config)
@@ -295,26 +304,24 @@ class ReadoutMap():
     def heat_up(self,config):
         # location, pat, rep, config
         print("One-hot encoding liquid state data...")
-        mats = []
+        mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy'
+        mats = np.load(mat_path, allow_pickle=True)
         labels=[]
-
         for rep in range(config.replicas):
             for pat in config.classes:
-
-                path = f'results/{config.dir}/liquid/spikes/{config.full_loc}_pat{pat}_rep{rep}.txt'
-                dat,indices,times = txt_to_spks(path)
-
-                mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
                 labels.append(pat)
+                # path = f'results/{config.dir}/liquid/spikes/{config.full_loc}_pat{pat}_rep{rep}.txt'
+                # dat,indices,times = txt_to_spks(path)
+                # mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
 
-        storage_mats = np.array(mats)
-        dirName = f"results/{config.dir}/performance/liquids/encoded/"
-        try:
-            os.makedirs(dirName)    
-        except FileExistsError:
-            pass
-        with open(f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy', 'wb') as f:
-            np.save(f, storage_mats, allow_pickle=True)
+        # storage_mats = np.array(mats)
+        # dirName = f"results/{config.dir}/performance/liquids/encoded/"
+        # try:
+        #     os.makedirs(dirName)    
+        # except FileExistsError:
+        #     pass
+        # with open(f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy', 'wb') as f:
+        #     np.save(f, storage_mats, allow_pickle=True)
 
         self.labels = labels
         self.mats = mats
@@ -322,6 +329,7 @@ class ReadoutMap():
         return mats, labels
 
     def setup(self,config,mats,labels):
+        print(" --- SETTING UP ---")
         self.full_labels = []
         self.full_train = []
         # for lab in range(len(labels)):
@@ -343,6 +351,8 @@ class ReadoutMap():
 
         print('Train/test split: ',self.train_range,self.test_range)
 
+        print(" --- SET UP ---")
+
         # return self.train_range, self.test_range
 
     def regress(self,config):
@@ -352,13 +362,12 @@ class ReadoutMap():
         testing = self.full_train[self.train_range:]
         test_target = self.full_labels[self.train_range:]
         chunk_size = 1
-        chunking = True
-        if chunking==True:
+        if config.chunk>1:
             ########################################  
                         # CHUNKING #    
             ########################################      
             print("--- chunking ---")
-            chunk_size = 10
+            chunk_size = config.chunk
             train_chunks = []
             target_chunks = []
             count = 0

@@ -26,12 +26,13 @@ def setup_argument_parser():
     parser.add_argument("--plots", help = " ", default = True)
     parser.add_argument("--flow", help = " ", type = bool, default = False)
     parser.add_argument("--full_loc", help = " ", type = str, default=None)
+    parser.add_argument("--chunk", help = " ", type = int, default = 10)
 
     # liquids
     parser.add_argument("--learning", help = " ", choices = ['Maass', 'STSP', 'STDP','LSTP'], type = str, default = "STSP")
     parser.add_argument("--topology", help = " ", choices = ['rnd', 'geo', 'smw'], type = str, default = "rnd")
-    parser.add_argument("--input_sparsity", help = " ", type = float, default = 0.01) #0.3)
-    parser.add_argument("--res_sparsity", help = " ", type = float, default = 0.005) #.2)
+    parser.add_argument("--input_sparsity", help = " ", type = float, default = 0.3)
+    parser.add_argument("--res_sparsity", help = " ", type = float, default = .2)
     parser.add_argument("--STSP_U", help = " ", type = float, default = 0.6)
     parser.add_argument("--x_atory", help = " ", type = bool, default = False)
 
@@ -46,6 +47,10 @@ def setup_argument_parser():
     parser.add_argument("--neurons", help = " ", type = int, default = 64)
     parser.add_argument("--refractory", help = " ", type = float, default = 3.0)
     parser.add_argument("--delay", help = " ", type = float, default = 1.5)
+
+    # Reruns
+    parser.add_argument("--rerun", help = " ", type = str, default = "sweep")
+    parser.add_argument("--rerun_single", help = " ", type = str, default = None)
 
 
     # storage

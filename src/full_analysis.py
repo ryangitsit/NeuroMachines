@@ -1,3 +1,5 @@
+#%%
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -238,7 +240,7 @@ class StateAnalysis():
 
     def analysis_loop(self):
         np.seterr(divide='ignore', invalid='ignore')
-        experiments = 300 #int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
+        experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
         count = 0
         self.MATs = {}
         self.PCs = {}
@@ -460,6 +462,7 @@ class StateAnalysis():
         if show == True:
             plt.show()
         plt.close()
+    
 
 class MetaAnalysis():
     def __init__(self,config,save,show):
@@ -468,12 +471,12 @@ class MetaAnalysis():
         self.directory = f'results/{config.dir}/'
 
     def show_all(self,key):
-        import cv2
-        for pat in config.classes:
-            plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{pat}_rep0.png')
-            plot.show()
-        plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
-        plot.show()
+        # import cv2
+        # for pat in config.classes:
+        #     plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{pat}_rep0.png')
+        #     plot.show()
+        # plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
+        # plot.show()
         plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
         plot.show()
 
@@ -489,6 +492,8 @@ class MetaAnalysis():
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 
+    # def control_test(self,second_sweep):
+
 
 
 sweep = "hei_phei"
@@ -499,41 +504,113 @@ file = os.path.join(directory, filename)
 file_to_read = open(file, "rb")
 config = pickle.load(file_to_read)
 file_to_read.close()
-save = False
+save = True
 show = False
 
 full_analysis = PerformanceAnalysis(config,save,show)
 full_analysis.performance_pull()
 finals, totals = full_analysis.rankings()
+full_analysis.print_rankings(finals,"Final Performance",336)
+
+full_analysis.print_rankings(totals,"Total Performance",336)
 # full_analysis.performance_statistics(finals,20)
-# full_analysis.hist_ranked()
+# # full_analysis.hist_ranked()
 
-top_finals=dict(itertools.islice(finals.items(),8))
-top_totals=dict(itertools.islice(totals.items(),8))
+# top_finals=dict(itertools.islice(finals.items(),8))
+# top_totals=dict(itertools.islice(totals.items(),8))
 
-meta = MetaAnalysis(config,save,show)
-for k in top_finals.keys():
-    meta.show_all(k)
+# full_analysis.print_rankings(totals,"Final Performance",10)
 
-for k in top_totals.keys():
-    meta.show_all(k)
+# config.dir = sweep + "_rerun"
+# re_analysis = PerformanceAnalysis(config,save,show)
+# re_analysis.performance_pull()
+# refinals, retotals = re_analysis.rankings()
+# # full_analysis.performance_statistics(finals,20)
+# # full_analysis.hist_ranked()
 
-# state_analysis = StateAnalysis(config,save,show)
-# MATs, PCs = state_analysis.analysis_loop()
+# # top_finals=dict(itertools.islice(finals.items(),8))
+# # top_totals=dict(itertools.islice(totals.items(),8))
+
+# re_analysis.print_rankings(retotals,"Final Performance",10)
+
+# for i,(k,v) in enumerate(full_analysis.all_finals.items()):
+#     print(np.abs(v - re_analysis.all_finals[k]))
+
+### STATES ###
+state_analysis = StateAnalysis(config,save,show)
+MATs, PCs = state_analysis.analysis_loop()
 
 # # key = 'Maass_geo=(randNone_geo[45, 3, 1]_smNone)_N=135_IS=0.17_RS=0.3_ref=3.0_delay=1.5_U=0.6'
+# key = 'LSTP_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=0.0_U=0.6'
+
+## Plot all full paths ##
 # for i in range(len(PCs)):
 #     state_analysis.full_path_plot(list(PCs)[i])
+
+## Plot all PCs for one config ## 
 # for t in range(config.length):
-#     state_analysis.full_pc_plot(key,t)
+#     state_analysis.full_pc_plot(list(totals)[-1],t)
+
 # for t in range(config.length):
 #     state_analysis.pc_plot(list(PCs)[23],t)
     # state_analysis.pc_plot('Maass_geo=(randNone_geo[9, 5, 3]_smNone)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=1.5_U=0.6',t)
-# for i in range(len(PCs)):
-#     state_analysis.path_plot(list(PCs)[i])
 
 
 
+#%%
+class DistsanceAnalysis():
+    def __init__(self,MATs,PCs,config,save,show):
+        self.save = save
+        self.show = show
+        # self.directory = f'results/{config.dir}/'
+
+
+    def distance_measure(self,single):
+        print(single.shape)
+        #print(single[0,:,0])
+        reps = config.replicas
+        intra_ranges = [[x*reps,x*reps+reps] for x in range(config.patterns)]
+        print(intra_ranges)
+        intra_t = []
+        inter_t = []
+        intra_mean_dist_t = []
+        for t in range(config.length):
+            eucs = []
+            intra_means = []
+            for intra in intra_ranges:
+                combinations = list(itertools.combinations(list(range(intra[0],intra[1])),2))
+                euc = [(distance.euclidean(single[comb[0],:,t],single[comb[1],:,t])) for comb in combinations]
+                pos = [single[y,:,t] for y in range(intra[0],intra[1])]
+                eucs.append(euc)
+                intra_means.append(np.mean(pos,axis=0))
+                # std?
+            intra_t.append([eucs])
+            intra_mean_dist_t.append(np.mean(np.concatenate(eucs)))
+            inter_combs = list(itertools.combinations(list(range(config.patterns)),2))
+            inter_dists = [distance.euclidean(intra_means[comb[0]],intra_means[comb[1]]) for comb in inter_combs]
+            inter_t.append(np.mean(inter_dists))
+
+        print(len(intra_t), len(intra_mean_dist_t), len(inter_t))
+        #return intra_t, intra_mean_dist_t, inter_t
+
+from scipy.spatial import distance
+dist = DistsanceAnalysis(config,MATs,PCs,save,show)
+single = MATs[list(MATs)[0]]
+dist.distance_measure(single)
+
+#%%
+
+
+### META ###
+
+meta = MetaAnalysis(config,save,show)
+# meta.show_all(list(totals)[0])
+
+# for k in top_finals.keys():
+    # meta.show_all(k)
+
+for k in list(totals)[-30:-10]:
+    meta.show_all(k)
 
 
 

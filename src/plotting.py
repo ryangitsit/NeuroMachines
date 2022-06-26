@@ -50,6 +50,7 @@ def performance(config,accs_array,final_mean):
     plt.figure(figsize=(14, 8))
     plt.style.use('seaborn-muted')
     plt.title(f"Certainty over time (Final Mean: {final_mean})\n{config.full_loc}", fontsize=16)
+    # x = np.arange(1,len(accs_array[0])*config.chunk,config.chunk)
     for i in range(len(accs_array)):
         plt.plot(accs_array[i],'--',label=config.classes[i])
     plt.axhline(y=1,linewidth=2,ls='--', label=f"Correct classification", color='k')

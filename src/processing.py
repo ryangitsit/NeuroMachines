@@ -203,12 +203,15 @@ def write_dict(dict,path,name):
     f.close()
 
 def save_spikes(N,T,times,indices,location,item):
+    #spiking
     dirName = f"results/{location}/spikes"
     try:
         os.makedirs(dirName)    
     except FileExistsError:
         pass
     spks_to_txt(N,indices,times,prec=8,name=f"results/{location}/spikes/{item}")
+
+    #plotting
     dirName2 = f"results/{location}/plots"
     try:
         os.makedirs(dirName2)    
@@ -217,7 +220,7 @@ def save_spikes(N,T,times,indices,location,item):
     # if N < 100 and "inputs" in location:
     #     raster_run_input(times,indices,dirName2,item)
     # else:
-    # raster_save(times,indices,dirName2,item)
+    raster_save(times,indices,dirName2,item)
 
 
 def billboard(word):
