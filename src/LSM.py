@@ -232,13 +232,13 @@ class LiquidState():
         nets = Network(G, S)
         nets.store()
 
-        # dirName = f"results/{self.dir}/weights/"
-        # try:
-        #     os.makedirs(dirName)    
-        # except FileExistsError:
-        #     pass
-        # with open(f'results/{self.dir}/weights/{self.full_loc}.npy', 'wb') as f:
-        #     np.save(f, W, allow_pickle=True)
+        dirName = f"results/{self.dir}/weights/"
+        try:
+            os.makedirs(dirName)    
+        except FileExistsError:
+            pass
+        with open(f'results/{self.dir}/weights/{self.full_loc}.npy', 'wb') as f:
+            np.save(f, W, allow_pickle=True)
 
         mats = []
         for pat,v in dataset.items():

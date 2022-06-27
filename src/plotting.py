@@ -18,7 +18,7 @@ def raster_plot(time, index):
 
 def raster_save(time,index,dirName,item):
     plt.figure(figsize=(16, 12))
-    if len(time) > 10000:
+    if len(time) > 1000:
         plt.plot(time, index, '.k', ms=.7)
     else:
         plt.plot(time, index, '.k')

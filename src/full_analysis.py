@@ -566,38 +566,75 @@ class DistsanceAnalysis():
 
 
     def distance_measure(self,single):
-        print(single.shape)
-        #print(single[0,:,0])
         reps = config.replicas
         intra_ranges = [[x*reps,x*reps+reps] for x in range(config.patterns)]
-        print(intra_ranges)
         intra_t = []
         inter_t = []
+        clust_t = []
         intra_mean_dist_t = []
         for t in range(config.length):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                km = KMeans(3)
+                clusts = km.fit_predict(single[:,:,t])
             eucs = []
             intra_means = []
+            clusting=[]
             for intra in intra_ranges:
                 combinations = list(itertools.combinations(list(range(intra[0],intra[1])),2))
                 euc = [(distance.euclidean(single[comb[0],:,t],single[comb[1],:,t])) for comb in combinations]
                 pos = [single[y,:,t] for y in range(intra[0],intra[1])]
                 eucs.append(euc)
                 intra_means.append(np.mean(pos,axis=0))
+                if len(set(clusts[intra[0]:intra[1]]))==1 and len(set(clusts))==3:
+                    clusting.append(1)
                 # std?
             intra_t.append([eucs])
             intra_mean_dist_t.append(np.mean(np.concatenate(eucs)))
             inter_combs = list(itertools.combinations(list(range(config.patterns)),2))
             inter_dists = [distance.euclidean(intra_means[comb[0]],intra_means[comb[1]]) for comb in inter_combs]
             inter_t.append(np.mean(inter_dists))
+            if np.sum(clusting)==3:
+                clust_t.append(1)
+            else:
+                clust_t.append(0)
+        # print(len(intra_t), len(intra_mean_dist_t), len(inter_t),len(clust_t))
+        diff_t = np.array(inter_t)-np.array(intra_mean_dist_t)/config.replicas
+        #print(diff_t)
+        return intra_t, intra_mean_dist_t, inter_t,clust_t,diff_t
 
-        print(len(intra_t), len(intra_mean_dist_t), len(inter_t))
-        #return intra_t, intra_mean_dist_t, inter_t
+    def all_dists(self):
+        self.intra = {}
+        self.intra_mean_dist = {}
+        self.inter= {}
+        self.clust = {}
+        self.diff = {}
+        self.diff_sum = {}
+        for i,(k,v) in enumerate(MATs.items()):
+            print(i," - ",k)
+            self.intra[k], self.intra_mean_dist[k], self.inter[k], self.clust[k], self.diff[k] = self.distance_measure(v)
+            if np.sum(self.clust[k])>0:
+                print(f"Clustering with {np.sum(self.clust[k])} success")
+            self.diff_sum[k] =  np.sum(self.diff[k])
+        
+        dist_ranked = dict(reversed(sorted(self.diff_sum.items(), key=lambda item: item[1])))
+        for k,v in dist_ranked.items():
+            print(np.round(v,4)," - ",k)
+            
 
+from sklearn.cluster import KMeans
 from scipy.spatial import distance
+import warnings
 dist = DistsanceAnalysis(config,MATs,PCs,save,show)
-single = MATs[list(MATs)[0]]
-dist.distance_measure(single)
-
+# single = MATs[list(MATs)[0]]
+# dist.distance_measure(single)v
+dist.all_dists()
+#%%
+ordered_distance = []
+plt.figure(figsize=(10,10))
+for k in totals.keys():
+    ordered_distance.append(dist.diff_sum[k])
+plt.plot(ordered_distance,'.k')
 #%%
 
 

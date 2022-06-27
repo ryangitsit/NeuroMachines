@@ -48,22 +48,29 @@ def txt_to_spks(file):
 
 
 
+# def one_hot(N,length,indices,times):
+#     """"
+#     One-Hot Encode Spikes into a Matrix
+#     - Create matrix of time slices per neuron index
+#     - Time slices of (1ms) each
+#     - Check for each neuron if spike occurs within that dt
+#     - If so, add 1 for that index at that dt
+#     - Multiple spikes per index/dt possible
+#     """
+#     # slices = np.int(np.max(times))
+#     slices=length
+#     hot_matrix = np.zeros((N,slices))
+#     for slice in range(0,slices):
+#         for t in range(len(times)):
+#             if times[t] > slice and times[t] <= slice+1 and times[t] < length:
+#                 hot_matrix[indices[t]][slice] += 1
+#     return hot_matrix
+
 def one_hot(N,length,indices,times):
-    """"
-    One-Hot Encode Spikes into a Matrix
-    - Create matrix of time slices per neuron index
-    - Time slices of (1ms) each
-    - Check for each neuron if spike occurs within that dt
-    - If so, add 1 for that index at that dt
-    - Multiple spikes per index/dt possible
-    """
-    # slices = np.int(np.max(times))
-    slices=length
-    hot_matrix = np.zeros((N,slices))
-    for slice in range(0,slices):
-        for t in range(len(times)):
-            if times[t] > slice and times[t] <= slice+1 and times[t] < length:
-                hot_matrix[indices[t]][slice] += 1
+    hot_matrix = np.zeros((N,length))
+    for t in range(len(times)):
+        if times[t] < length:
+            hot_matrix[indices[t],int(np.floor(times[t]))] +=1
     return hot_matrix
 
 
