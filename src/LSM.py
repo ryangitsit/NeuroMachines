@@ -46,13 +46,13 @@ from collections import Counter
 """
 
 
-#pick = 'results/scale_testing/configs/Maass_rnd=(randNone_geoNone_smNone)_N=100_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6.pickle'
-pick = 'results/testing/configs/config_STSP_rnd=(randNone_geoNone_smNone)_N=64_IS=0.3_RS=0.2_ref=3.0_delay=1.5_U=0.6.pickle'
-file_to_read = open(pick, "rb")
-config = pickle.load(file_to_read)
-file_to_read.close()
+# #pick = 'results/scale_testing/configs/Maass_rnd=(randNone_geoNone_smNone)_N=100_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6.pickle'
+# pick = 'results/testing/configs/config_STSP_rnd=(randNone_geoNone_smNone)_N=64_IS=0.3_RS=0.2_ref=3.0_delay=1.5_U=0.6.pickle'
+# file_to_read = open(pick, "rb")
+# config = pickle.load(file_to_read)
+# file_to_read.close()
 
-print(config.__dict__)
+# print(config.__dict__)
 #%%
 class Input:
     '''
@@ -278,13 +278,7 @@ class LiquidState():
                 #################
                 #################
                 example = inputs.dataset[pat][rep]
-                # print(example)
                 timed = inputs.times[example]*ms
-
-                # plt.figure(figsize=(16,12))
-                # plt.plot(timed/ms, inputs.units[example],'.k')
-                # plt.title(f"{pat} - {rep}")
-                # plt.show()
 
                 SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
 
@@ -314,9 +308,9 @@ class LiquidState():
             np.save(f, storage_mats, allow_pickle=True)
 
 
-liquids = LiquidState(config)
-liquids.describe(config)
-liquids.respond(config,inputs,dataset)
+# liquids = LiquidState(config)
+# liquids.describe(config)
+# liquids.respond(config,inputs,dataset)
 
 
 #%%
@@ -340,9 +334,6 @@ class ReadoutMap():
         self.full_labels = []
         self.full_train = []
 
-        # for lab in range(len(labels)):
-        #     full_labels += [labels[lab]]*int(self.T)
-        # full_train = []
         for i in range(len(labels)):
             self.full_labels += [labels[i]]*int(self.T)
             for j in range(config.length):
@@ -561,9 +552,9 @@ class ReadoutMap():
 
 
 ## For Debugging, ignore
-output = ReadoutMap(config)
-output.setup(config)
+# output = ReadoutMap(config)
+# output.setup(config)
 
-output.regress(config)
+# output.regress(config)
 
 # %%
