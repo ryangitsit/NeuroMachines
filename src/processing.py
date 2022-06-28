@@ -227,7 +227,8 @@ def save_spikes(N,T,times,indices,location,item):
     # if N < 100 and "inputs" in location:
     #     raster_run_input(times,indices,dirName2,item)
     # else:
-    raster_save(times,indices,dirName2,item)
+    if item[-1] == '0' or len(item) < 20:
+        raster_save(times,indices,dirName2,item)
 
 
 def billboard(word):

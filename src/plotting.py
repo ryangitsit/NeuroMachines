@@ -24,7 +24,6 @@ def raster_save(time,index,dirName,item):
         plt.plot(time, index, '.k')
     plt.xlabel('Time (ms)')
     plt.ylabel('Neuron index')
-
     plt.title(f'Raster Plot {item}')
     plt.savefig(f'{dirName}/{item}.png')
     plt.close()     

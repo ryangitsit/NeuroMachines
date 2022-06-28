@@ -67,23 +67,25 @@ def main():
         elif config.input_name == "Poisson":
             names = string.ascii_letters[26:52]
         config.classes=names[:config.patterns]
-        print(config.classes)
-        
+
+
         dataset = inputs.read_data(config)
         print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
         for k,v in dataset.items():
             print(f"  Pattern {k} at indices {v}")
         inputs.describe()
 
+
         ### RESERVOIR ###
         liquids = LiquidState(config)
-        liquids.describe()
-        liquids.respond(inputs,dataset) # liquid response to all inputs
+        liquids.describe(config)
+        liquids.respond(config,inputs,dataset) # liquid response to all inputs
+
 
         ### OUTPUT ###
         output = ReadoutMap(config)
-        matrices, labels = output.heat_up(config) # legacy
-        output.setup(config,matrices,labels) # take time slices and label them, also split train/test
+        # matrices, labels = output.heat_up(config) # legacy
+        output.setup(config) # take time slices and label them, also split train/test
         output.regress(config) # fit regression model for training, and then test on unseen data
 
         # save final config for future use

@@ -1,3 +1,4 @@
+#%%
 import numpy as np
 from brian2 import *
 import matplotlib.pyplot as plt
@@ -13,25 +14,71 @@ import pickle
 
 from collections import Counter
 
+"""
+### LSM.py ###
 
-# #pick = 'results/scale_testing/configs/Maass_rnd=(randNone_geoNone_smNone)_N=100_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6.pickle'
-# pick = 'results/scale_testing/configs/Maass_rnd=(rand0.01_geoNone_smNone)_N=100_IS=0.05_RS=0.01_ref=0.0_delay=0.0_U=0.6.pickle'
-# file_to_read = open(pick, "rb")
-# config = pickle.load(file_to_read)
-# file_to_read.close()
+    - Input (class)
+        - can read in existing data or generate new data
+        - save all data as spikes and raster plots
+            - results/input/
+        - refers to dataset in future with dictionary `dataset`
+            - keys are unique pattern labels
+            - values are indices of replicas of that pattern
 
-# print(config.__dict__)
+    - LiquidState (class)
+        - Generates reserovirs according to defined configuration
+        - Responds to each example with same reservoir initialization
+        - In parallel, saves weights and pseudo-one-hot-encodes matrices
+        - Saves spikes and can optionally save raster plots
+            - results/{sweep}/liquids/
 
+    - Readout (class)
+        - Imports saved pseudo-one-hot-encodes matrice
+        - Optionally chunks columns by `chunk_size`
+        - Labels all columns (or chunks)
+        - Splits into training/testing columns (or chunks)
+            - The last full liquid state matrix for each pattern is test
+        - Trains logistic regression on appropriate labels
+        - Tests on unseen examples and tracks ratio of correct repsponse to most given response
+            - records as certainty for each class
+        - Automatically plots and saves certainty plots and arrays
+            - results/{sweep}/performance
+"""
+
+
+#pick = 'results/scale_testing/configs/Maass_rnd=(randNone_geoNone_smNone)_N=100_IS=0.2_RS=0.3_ref=0.0_delay=0.0_U=0.6.pickle'
+pick = 'results/testing/configs/config_STSP_rnd=(randNone_geoNone_smNone)_N=64_IS=0.3_RS=0.2_ref=3.0_delay=1.5_U=0.6.pickle'
+file_to_read = open(pick, "rb")
+config = pickle.load(file_to_read)
+file_to_read.close()
+
+print(config.__dict__)
+#%%
 class Input:
+    '''
+    - Creates new input or reads in existing input
+    - Save dataset as spikes/plots
+    - Maintains data as times/indices attributes of self
+    '''
+
     def __init__(self,config):
+        '''
+        Initializes object with full use of .config object
+        '''
         self.file = config.input_file
-        self.input_name = config.input_name
         self.input_name = config.input_name
 
     def __str__(self):
         return f"Dataset: \n{self.__dict__}"
 
     def get_data(self):
+        '''
+        - Reads in Heidelberg data
+        - Adds data to self
+        - Note this data is not in pushed to the git
+            - Must be downloaded locally from:
+        https://ieee-dataport.org/open-access/heidelberg-spiking-datasets
+        '''
         if self.input_name == "Heidelberg":
             file_path = f"datasets/{self.input_name}/{self.file}"
             fileh = tables.open_file(file_path, mode='r')
@@ -44,6 +91,15 @@ class Input:
             self.classes = np.max(self.labels)
 
     def read_data(self,config):
+        '''
+        For existing data
+        - For datasets previously saved to .txt in results/{sweep}/inputs
+        - Necessary for poisson experiments because new sets will
+          be different every time
+        - Adds data to self
+        - Note that self.dataset is used to refer to which indices carry
+          the appropriate samples for a given unique pattern class
+        '''
         dataset = {}
         count = 0
         UNITS = []
@@ -69,6 +125,11 @@ class Input:
         return self.dataset
 
     def generate_data(self,config):
+        '''
+        For Poisson Experiments only
+            - Generates class labels
+            - 
+        '''
         patterns = config.patterns
         replicas = config.replicas
         length = config.length
@@ -83,6 +144,8 @@ class Input:
         if length < 100:
             print("### Error: Minimum of 100ms simulation length required.  Try again... ###")
             return
+
+        # Generating class labels
         classes = []
         for letter in range(patterns):
             if patterns < 27:
@@ -94,33 +157,25 @@ class Input:
                 classes.append(f"pattern_{letter}")
                 for r in range(replicas):
                     dataset[str(letter)+"_"+str(r)] = []
-
-
         print(f"Pattern classes = {classes}\n")
-        pattern_dataset = {}
+
+        # Generate data form poisson_generator.py
+        # add times and indices to self object
+        # track location of replicas for a given pattern in dataset dict
         rates_dict = {}
         count = 0
         for i,pattern in enumerate(classes):
-            #config.rate_low = i*60+40
             print("Pattern: ", pattern)
-            pattern_dataset[pattern] = []
             rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low, config.rate_high, config.length)
             rates_dict[pattern] = rand_rates
             for r in range(replicas):
                 print(" Replica: ", r)
                 jittered = create_jitter(jitter,times)
-                zipped = np.array(list(zip(indices,np.round(jittered*1000,8))))
-                pattern_dataset[pattern].append(zipped)
                 UNITS.append(indices)
                 TIMES.append(np.round(jittered,8))
                 labels.append(pattern+str(r))
                 dataset[pattern].append(count)
                 count+=1
-
-        class_length = len(pattern_dataset)
-        rep_len = len(pattern_dataset[classes[0]])
-        spike_len = len(pattern_dataset[classes[0]][0][:,1])
-        print(f"Poisson pattern dataset generated, with size: ({class_length}, {rep_len}, {spike_len})")
         self.units = UNITS
         self.times = np.array(TIMES,dtype=object)/1000
         self.labels = labels
@@ -131,9 +186,9 @@ class Input:
         return dataset
 
     def describe(self):
+        # Check everything is in order
         string = f"""Dataset description:
         Dataset = {self.dataset}
-        Subset = {self.file} 
         Examples = {len(self.labels)}
         Channels = {self.channels}
         Time length = {self.length} seconds
@@ -142,7 +197,14 @@ class Input:
         print(string)
 
     def make_dataset(self,patterns,replicas):
-        names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','NULL','EINS','ZWEI','DREI','VIER','FUNF','SECHS','SEBEN','ACHT','NEUN','ZEHN']
+        '''
+        For Heidelberg dataset only
+            - creates dictionary storing correct attribute indices of
+              of data for each class label
+        '''
+        names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN',
+                 'EIGHT','NINE','TEN','NULL','EINS','ZWEI','DREI','VIER',
+                 'FUNF','SECHS','SEBEN','ACHT','NEUN','ZEHN']
         self.dataset = {}
         for i in range(patterns):
             result = np.where(np.array(self.labels)==i)
@@ -150,6 +212,9 @@ class Input:
         return self.dataset
 
     def save_data(self,location):
+        '''
+        Save all examples in unique files with inputs directory
+        '''
         for k,v in self.dataset.items():
             for i,rep in enumerate(v):
                 input_units = self.units[rep]
@@ -158,180 +223,123 @@ class Input:
                 item = f'pat{k}_rep{i}'
                 save_spikes(self.channels,self.length,input_times*1000,input_units,loc,item)
 
-# inputs = Input(config)
-# dataset = inputs.read_data(config)
-# print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
-# for k,v in dataset.items():
-#     print(f"  Pattern {k} at indices {v}")
-# inputs.describe()
+inputs = Input(config)
+dataset = inputs.read_data(config)
+print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
+for k,v in dataset.items():
+    print(f"  Pattern {k} at indices {v}")
+inputs.describe()
+
+#%%
 
 class LiquidState():
-    # intitializing generic *instance* attributes with parameter names
-    def __init__(self, config): #N,T,learning,topology,input_sparsity,res_sparsity,refractory,delay):
-        self.N = config.neurons
-        self.T = config.length
-        self.learning = config.learning
-        self.topology = config.topology
-        self.input_sparsity = config.input_sparsity
-        self.res_sparsity = config.res_sparsity
-        self.rndp = config.rndp
-        self.dims = config.dims
-        self.beta = config.beta
-        self.refractory = config.refractory
-        self.delay = config.delay
-        self.full_loc = config.full_loc
-        self.dir = config.dir
-        self.STSP_U = config.STSP_U
-        self.x_atory = config.x_atory
+    def __init__(self, config):
+        self.name = config.full_loc
 
     def __str__(self):
         return f"Liquid attributes: \n{self.__dict__.keys()}"
     
-    def describe(self):
+    def describe(self,config):
+        lst = list(config.__dict__.keys())
+        start = lst.index("learning")
+        finish = lst.index("delay")
         print("-----------------\nLiquid attributes:")
-        for k in self.__dict__.keys():
-            print(f"  {k} = {self.__dict__[k]}")
+        for k in lst[start:finish+1]:
+            print(f"  {k} = {config.__dict__[k]}")
         print("-----------------\n")
 
-    def simulate(self,inputs,example,nets,G,S):
-
-        # # start_scope()
-
-        # # G, S = reservoir(self)
-        # # nets = Network(G, S)
+    def respond(self,config,inputs,dataset):
 
         if inputs.input_name == 'Poisson':
-            timed = inputs.times[example]*ms
+            config.DT = 1
         elif inputs.input_name =='Heidelberg':
-            timed = inputs.times[example]*1000*ms
-        else:
-            print("Input skipped")
-        
-        SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=100*us)
-        
-        SP = Synapses(SGG, G, on_pre='v+=1')
-        SP.connect('i!=j', p=self.input_sparsity)
-        spikemon = SpikeMonitor(G)
-        nets.add(SGG, SP, spikemon)
-        #nets.store()
-        nets.run((self.T)*ms)
-        indices = np.array(spikemon.i)
-        times = np.array(spikemon.t/ms)
-        nets.remove(SGG,SP,spikemon)
-        nets.restore()
-
-        return [indices,times]
-        # return [inputs.units[example],timed/ms]
-
-
-
-    def respond(self,inputs,dataset):
+            config.DT = 100
 
         start_scope()
-        G, S, W = reservoir(self)
+        G, S, W = reservoir(config)
         nets = Network(G, S)
         nets.store()
 
-        dirName = f"results/{self.dir}/weights/"
+        dirName = f"results/{config.dir}/weights/"
         try:
             os.makedirs(dirName)    
         except FileExistsError:
             pass
-        with open(f'results/{self.dir}/weights/{self.full_loc}.npy', 'wb') as f:
+        with open(f'results/{config.dir}/weights/{config.full_loc}.npy', 'wb') as f:
             np.save(f, W, allow_pickle=True)
 
         mats = []
         for pat,v in dataset.items():
             for rep,replica in enumerate(v):
                 item = f'pat{pat}_rep{rep}'
-                print(f"\n --- Responding to pattern {pat}, replica {rep} --- \n")
-                loc_liq = f'{self.dir}/liquid'
-                item_liq = f'{self.full_loc}_{item}'
-                # result = self.simulate(inputs,rep,nets,G,S)
-                # indices = result[0]
-                # times = result[1]
-
+                print(f" --- Responding to pattern {pat}, replica {rep} ---")
+                loc_liq = f'{config.dir}/liquid'
+                item_liq = f'{config.full_loc}_{item}'
                 #################
                 #################
-                example = rep
-                if inputs.input_name == 'Poisson':
-                    timed = inputs.times[example]*ms
-                    DT = 1
-                elif inputs.input_name =='Heidelberg':
-                    timed = inputs.times[example]*ms
-                    DT = 100
-                else:
-                    print("Input skipped")
+                example = inputs.dataset[pat][rep]
+                # print(example)
+                timed = inputs.times[example]*ms
 
+                # plt.figure(figsize=(16,12))
+                # plt.plot(timed/ms, inputs.units[example],'.k')
+                # plt.title(f"{pat} - {rep}")
+                # plt.show()
 
-                SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=DT*us)
-            
-                SP = Synapses(SGG, G, on_pre='v+=1', dt=DT*us)
-                SP.connect('i!=j', p=self.input_sparsity)
+                SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
+
+                SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
+                SP.connect(p=config.input_sparsity)
                 spikemon = SpikeMonitor(G)
                 nets.add(SGG, SP, spikemon)
-                #nets.store()
-                nets.run((self.T)*ms)
+                nets.run((config.length)*ms)
                 indices = np.array(spikemon.i)
                 times = np.array(spikemon.t/ms)
-                mats.append(one_hot(self.N,self.T,np.array(indices)[:],times[:]))
+                mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
                 nets.remove(SGG,SP,spikemon)
                 nets.restore()
                 #################
                 #################
-                save_spikes(self.N,inputs.length,times,indices,loc_liq,item_liq)
+                if rep == 0:
+                    save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq)
+
         storage_mats = np.array(mats)
-        dirName = f"results/{self.dir}/performance/liquids/encoded/"
+        # print(storage_mats)
+        dirName = f"results/{config.dir}/performance/liquids/encoded/"
         try:
             os.makedirs(dirName)    
         except FileExistsError:
             pass
-        with open(f'results/{self.dir}/performance/liquids/encoded/mat_{self.full_loc}.npy', 'wb') as f:
+        with open(f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy', 'wb') as f:
             np.save(f, storage_mats, allow_pickle=True)
 
 
-# liquids = LiquidState(config)
-# liquids.describe()
-# liquids.respond(inputs,dataset)
+liquids = LiquidState(config)
+liquids.describe(config)
+liquids.respond(config,inputs,dataset)
 
 
-
+#%%
 class ReadoutMap():
     def __init__(self,config):
         self.N = config.neurons
         self.T = config.length
 
-    def heat_up(self,config):
-        # location, pat, rep, config
-        print("One-hot encoding liquid state data...")
+    def setup(self,config):
+        print(" --- PREPARE TRAIN/TEST LIQUID STATE DATA ---")
         mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy'
         mats = np.load(mat_path, allow_pickle=True)
         labels=[]
-        for rep in range(config.replicas):
-            for pat in config.classes:
+        
+        for pat in config.classes:
+            for rep in range(config.replicas):
                 labels.append(pat)
-                # path = f'results/{config.dir}/liquid/spikes/{config.full_loc}_pat{pat}_rep{rep}.txt'
-                # dat,indices,times = txt_to_spks(path)
-                # mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
-
-        # storage_mats = np.array(mats)
-        # dirName = f"results/{config.dir}/performance/liquids/encoded/"
-        # try:
-        #     os.makedirs(dirName)    
-        # except FileExistsError:
-        #     pass
-        # with open(f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy', 'wb') as f:
-        #     np.save(f, storage_mats, allow_pickle=True)
-
         self.labels = labels
+        print(labels)
         self.mats = mats
-
-        return mats, labels
-
-    def setup(self,config,mats,labels):
-        print(" --- SETTING UP ---")
         self.full_labels = []
         self.full_train = []
+
         # for lab in range(len(labels)):
         #     full_labels += [labels[lab]]*int(self.T)
         # full_train = []
@@ -339,92 +347,99 @@ class ReadoutMap():
             self.full_labels += [labels[i]]*int(self.T)
             for j in range(config.length):
                 self.full_train.append(np.transpose(mats[i])[j])
-
+                # print(np.transpose(mats[i])[j])
+        print(len(self.full_labels))
+        print(len(self.full_train))
         self.len_labels = len(self.labels)
         self.split = config.patterns*config.replicas - config.patterns #*int(tests)
-        print(self.split)
+        #print(self.split)
 
-        print(f"  Number of 1ms time slice states: {len(self.labels)}\n  Distinct patterns: {config.patterns}")
+        print(f"  Number of 1ms time slice states: {len(self.full_labels)}\n  Distinct patterns: {config.patterns}")
 
-        self.train_range = int(self.split*len(self.full_train)/self.len_labels)
-        self.test_range = int(config.patterns*len(self.full_train)/self.len_labels)
+        self.train_range = config.length*(config.patterns*config.replicas - config.patterns) #int(self.split*len(self.full_train)/self.len_labels)
+        self.test_range = config.length*config.patterns #int(config.patterns*len(self.full_train)/self.len_labels)
 
         print('Train/test split: ',self.train_range,self.test_range)
 
-        print(" --- SET UP ---")
-
-        # return self.train_range, self.test_range
-
-    def regress(self,config):
-
-        training = self.full_train[:self.train_range]
-        target = self.full_labels[:self.train_range]
-        testing = self.full_train[self.train_range:]
-        test_target = self.full_labels[self.train_range:]
+        ratio = self.split/(config.replicas*config.patterns)
+        pat_step = int(config.length*config.replicas)
+        train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(3)]
+        test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(3)]
+        self.training = np.concatenate([self.full_train[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
+        self.target = np.concatenate([self.full_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
+        self.testing = np.concatenate([self.full_train[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
+        self.test_target = np.concatenate([self.full_labels[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
         chunk_size = 1
         if config.chunk>1:
             ########################################  
                         # CHUNKING #    
             ########################################      
-            print("--- chunking ---")
+            print(" --- chunking ---")
             chunk_size = config.chunk
-            train_chunks = []
-            target_chunks = []
-            count = 0
-            for slice in range(int(len(training)/chunk_size)):
-                chunk = []
-                for c in range(chunk_size):
-                    chunk.append(training[count])
-                    count+=1
-                train_chunks.append(array(np.concatenate(np.array(chunk))))
-                target_chunks.append(target[count-1])
+            print(len(self.full_train))
+            all_chunks = []
+            count=0
+            chunk_labels = []
+            for sample in range(config.patterns*config.replicas):
+                for t in range(int(config.length/chunk_size)):
+                    chunk=[]
+                    for c in range(chunk_size):
+                        chunk.append(self.full_train[count])
+                        count += 1
+                    chunk_labels.append(self.full_labels[count-1])
+                    all_chunks.append(array(np.concatenate(np.array(chunk))))
 
-            training = train_chunks
-            target = target_chunks
+            LENGTH = config.patterns*config.replicas*config.length
+            c_split = int(self.train_range/chunk_size)  
+            print(c_split)
+            
+            ratio = self.split/(config.replicas*config.patterns)
+            pat_step = int(config.length*config.replicas/chunk_size)
+            train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(3)]
+            test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(3)]
 
-            test_chunks = []
-            test_target_chunks = []
-            count = 0
-            for slice in range(int(len(testing)/chunk_size)):
-                chunk = []
-                for c in range(chunk_size):
-                    chunk.append(testing[count])
-                    count+=1
-                test_chunks.append(array(np.concatenate(np.array(chunk))))
-                test_target_chunks.append(test_target[count-1])
+            self.training = np.concatenate([all_chunks[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
+            self.target = np.concatenate([chunk_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
+            self.testing = np.concatenate([all_chunks[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
+            self.test_target = np.concatenate([chunk_labels[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
+            self.chunk_size = chunk_size
 
-            testing = np.array(test_chunks)
-            test_target = test_target_chunks
-            ########################################      
-            ########################################  
 
-        # # Fit liquid states to labels for training range
+    def regress(self,config):
+
+        # Fit liquid states to labels for training range
         print("Fitting regression model...")
-        logisticRegr = LogisticRegression(max_iter=500)
-        logisticRegr.fit(training, target)
-
+        logisticRegr = LogisticRegression(max_iter=10000)
+        logisticRegr.fit(self.training, self.target)
 
         # Make predictions on unseen data for testing range
         print("Making predictions...")
         predictions=[]
-        for i in range(len(testing)):
-            prediction = logisticRegr.predict(testing[i].reshape(1, -1))
+        for i in range(len(self.testing)):
+            prediction = logisticRegr.predict(self.testing[i].reshape(1, -1))
             predictions.append(prediction[0])
         print(predictions)
+        print(self.test_target)
+
+        raw_success = 0
+        for i in range(len(predictions)):
+            if predictions[i] == self.test_target[i]:
+                raw_success += 1
+        print(f"Raw accuracy = {raw_success/len(predictions)}")
 
         certainties = [[] for _ in range(config.patterns)]
         pre_labs = np.zeros((config.patterns,config.patterns))
         count = 0
 
-        
         for i,pat in enumerate(config.classes):
             # hit = 0
             # track = 0
             run = []
             running_pred = []
-            for j in range(int(config.length/chunk_size)):
+            for j in range(int(config.length/self.chunk_size)):
                 run.append(predictions[count])
                 pred_index = config.classes.index(predictions[count])
+                print(pred_index)
                 pre_labs[i][pred_index] += 1
                 top_pred = config.classes[np.argmax(pre_labs[i])]
 
@@ -546,7 +561,9 @@ class ReadoutMap():
 
 
 ## For Debugging, ignore
-# output = ReadoutMap(config)
-# matrices, labels = output.heat_up(config)
-# output.setup(config,matrices,labels)
-# output.regress(config)
+output = ReadoutMap(config)
+output.setup(config)
+
+output.regress(config)
+
+# %%
