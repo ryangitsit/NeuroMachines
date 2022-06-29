@@ -1,6 +1,7 @@
 #%%
 
 import os
+from os.path import dirname
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
@@ -8,8 +9,12 @@ import string
 import pickle
 from sklearn.decomposition import PCA
 from PIL import Image
+from sklearn.cluster import KMeans
+from scipy.spatial import distance
+import warnings
+from os.path import exists
 
-from processing import txt_to_spks,one_hot
+from processing import txt_to_spks,write_dict,read_json
 
 """
 Plan:
@@ -21,16 +26,6 @@ Plan:
     - Centroid separations
 - Plot separation measures over performance
 """
-
-# Performance (final accuracy)
-# Full Plot
-# Top Plot
-
-# PCs and Groups of time slices (store)
-
-# Average separation over time in both spaces (log comparison)
-
-# Determine coherent expansion coefficient of input
 
 class PerformanceAnalysis():
     def __init__(self,config,save,show):
@@ -72,6 +67,9 @@ class PerformanceAnalysis():
         return self.all_accs, self.all_avgs, self.all_totals, self.all_finals
 
     def accs_plots(self,tops=None):
+        """
+        Plot certainty trajectorys for all configurations in sweep
+        """
         dict = self.all_avgs.items()
         plt.figure(figsize=(16, 10))
         for i,(file, avg) in enumerate(dict):
@@ -81,7 +79,7 @@ class PerformanceAnalysis():
                 if file in tops:
                     plt.plot(avg)
             plt.title(f"Prediction Certainty Over Time",fontsize=24)
-            plt.ylim(0,1)
+            plt.ylim(0,1.1)
             plt.xlabel("Time (ms), dt=1ms",fontsize=22)
             plt.ylabel("Certainty for Correct Classification",fontsize=22)
         if self.save==True:
@@ -89,6 +87,12 @@ class PerformanceAnalysis():
                 path = f'results/{self.sweep}/analysis/perfplot.png'
             else:
                 path = f'results/{self.sweep}/analysis/top{len(tops)}_perfplot.png'
+            dirName = f'results/{self.sweep}/analysis/'
+            try:
+                os.makedirs(dirName)    
+            except FileExistsError:
+                pass
+
             plt.savefig(path)
         if self.show==True:
             plt.show()
@@ -107,7 +111,11 @@ class PerformanceAnalysis():
                 print(np.round(value,4), " - ", key)
         print("\n")
 
-    def performance_statistics(self,dict,lim):
+    def performance_statistics(self,config,dict,lim):
+        """
+        Determine number of occurnces for all hyperparameters within
+        top performing limit.  Also find parameter pairings.
+        """
         self.lim = lim
         hyper_parameters = {
             "learning":[],
@@ -118,7 +126,8 @@ class PerformanceAnalysis():
             "dims":[],
             "beta":[],
             "refractory":[],
-            "delay":[]
+            "delay":[],
+            "x_atory":[]
             }
         for k in list(dict)[:lim]:
             directory = f'results/{config.dir}/configs'
@@ -151,17 +160,20 @@ class PerformanceAnalysis():
             occ_combos = {}
             for u in unique_combos:
                 occ_combos[u] = sets.count(u)
-            print(param_combo)
-            for k,v in occ_combos.items():
-                if str(k[0]) != 'None' and str(k[1]) != 'None':
-                    print("   ",k," - ",v)
+            # print(param_combo)
+            # for k,v in occ_combos.items():
+            #     if str(k[0]) != 'None' and str(k[1]) != 'None':
+            #         print("   ",k," - ",v)
             self.combos[param_combo] = occ_combos
 
     def hist_ranked(self):
+        """
+        Plot histogram for occurnces of learing-topology pairs in 
+        defined top performers.
+        """
         labels = list(set(self.hyperparams["learning"]))
         dict = self.combos[list(self.combos)[0]]
         print(dict)
-        
         RND=[0,0,0,0]
         GEO=[0,0,0,0]
         SMW=[0,0,0,0]
@@ -190,7 +202,14 @@ class PerformanceAnalysis():
         plt.legend(fontsize=20) # using a size in points
         plt.legend(fontsize="x-large") # using a named size
         plt.tight_layout()
-        plt.show()
+
+        if self.save==True:
+            path = f'results/{self.sweep}/analysis/stats.png'
+            plt.savefig(path)
+        if self.show==True:
+            plt.show()
+        else:
+            plt.close()
 
 
     def top_plot(self):
@@ -206,18 +225,22 @@ class PerformanceAnalysis():
         fig, axs = plt.subplots(5, 3,figsize=(24,14))
         plt.title("Title")
         top_5 = list(self.final_perf_ranking)[:5]
-        for i,pattern in enumerate(self.classes):
+        print(self.classes[:self.patterns])
+        for i,pattern in enumerate(self.classes[:self.patterns]):
             suffix = "_pat"+pattern+"_rep0.txt"
             prefix = f'results/{self.sweep}/liquid/spikes/'
             for j,name in enumerate(top_5):
+                if not exists(prefix+name+suffix):
+                    break
                 #print(name+suffix)
                 dat, indices, times = txt_to_spks(prefix+name+suffix)
-                axs[j, i].plot(times, indices, '.k', ms=.1)
+                axs[j, i].plot(times, indices, '.k', ms=.7)
                 axs[j, i].set_title(name, size=6)
         for ax in axs.flat:
             ax.set(xlabel='time (ms)', ylabel='neuron index')
         for ax in axs.flat:
             ax.label_outer()
+
         if self.save==True:
             path = f'results/{self.sweep}/analysis/top_performers.png'
             plt.savefig(path)
@@ -227,119 +250,156 @@ class PerformanceAnalysis():
             plt.close()
 
 
-
-
 class StateAnalysis():
     def __init__(self,config,save,show):
         self.save = save
         self.show = show
         self.directory = f'results/{config.dir}/liquid/spikes'
 
-    def print_config(self):
+    def print_config(self,config):
         print(config.__dict__)
 
-    def analysis_loop(self):
+    def analysis_loop(self,config):
+        """
+        Gather States and PCs
+         - Iterate over all saved one-hot-encoded matrices
+         - Store them in a dictionary with experiment names as keys
+         - Meanwhile, generate first 3 PCs across states of the same time
+            - For all samples of an experiemnt
+            - Store in dictionary
+        """
         np.seterr(divide='ignore', invalid='ignore')
-        experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
+        
+        if config.old_encoded == True:
+            mat_dir = f'results/{config.dir}/performance/liquids/encoded/'
+        else:
+            mat_dir = f'results/{config.dir}/liquid/encoded/'
+        experiments = len(os.listdir(mat_dir))
+
         count = 0
         self.MATs = {}
         self.PCs = {}
         for exp in range(experiments):
-            for pat,label in enumerate(config.classes):
-                for r in range(config.replicas):
-                    filename = os.listdir(self.directory)[count]
-                    file = os.path.join(self.directory, filename)
-                    if (count) % 9 == 0:
-                        a = file
-                        b = '_pat'
-                        pat_loc = [(i, i+len(b)) for i in range(len(a)) if a[i:i+len(b)] == b]
-                        exp_name=file[len(self.directory)+1:pat_loc[0][0]]
-                        print(f"{exp}-{count} experiment: {exp_name}")
+            filename = os.listdir(mat_dir)[exp]
+            file = os.path.join(mat_dir, filename)
+            exp_name = file[len(mat_dir)+4:-4]
+            print(f"{exp} - experiment: {exp_name}")
 
-                        mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
-                        mat = np.load(mat_path, allow_pickle=True)
+            mat = np.load(file, allow_pickle=True)
 
-                        # # Across each replica within a pattern
-                        # pcs_times = []
-                        # for t in range(config.length):
-                        #     step = 0
-                        #     pc_pats = []
-                        #     for p,pattern in enumerate(config.classes):
-                        #         norms = []
-                        #         for r in range(config.replicas):
-                        #             slice = mat[step][:,t]
-                        #             norm = np.array(slice) - np.mean(slice)
-                        #             norms.append(norm)
-                        #             step+=1
-                        #         norms = np.array(norms)
-                        #         pc_obj = PCA(n_components=3)
-                        #         pc_slice = pc_obj.fit_transform(norms)
-                        #         pc_pat = pc_slice[:,0]
-                        #         pc_pats.append(pc_pat)
-                        #     pcs_times.append(np.array(pc_pats))
-                        # pcs_times = np.array(pcs_times)
+            # Across all
+            pcs_times = []
+            for t in range(config.length):
+                step = 0
+                pc_pats = []
+                norms = []
+                for p,pattern in enumerate(config.classes):
+                    # norms = []
+                    for r in range(config.replicas):
+                        slice = mat[step][:,t]
+                        norm = np.array(slice) - np.mean(slice)
+                        norms.append(norm)
+                        step+=1
+                norms = np.array(norms)
+                pc_obj = PCA(n_components=3)
+                pc_slice = pc_obj.fit_transform(norms)
+                #print(pc_slice)
+                pcs_times.append(np.array(pc_slice))
+            pcs_times = np.array(pcs_times)
+            self.MATs[exp_name] = mat
+            self.PCs[exp_name] = pcs_times
 
-                        # Across all
-                        pcs_times = []
-                        for t in range(config.length):
-                            step = 0
-                            pc_pats = []
-                            norms = []
-                            for p,pattern in enumerate(config.classes):
-                                # norms = []
-                                for r in range(config.replicas):
-                                    slice = mat[step][:,t]
-                                    norm = np.array(slice) - np.mean(slice)
-                                    norms.append(norm)
-                                    step+=1
-                            norms = np.array(norms)
-                            pc_obj = PCA(n_components=3)
-                            pc_slice = pc_obj.fit_transform(norms)
-                            #print(pc_slice)
-                            pcs_times.append(np.array(pc_slice))
-                        pcs_times = np.array(pcs_times)
-                        self.MATs[exp_name] = mat
-                        self.PCs[exp_name] = pcs_times
+        
+        dict = self.PCs
+        path = f'results/{config.dir}/analysis/'
+        name = 'all_pcs'
+        write_dict(dict,path,name)
 
-                    #dat,indices,times = txt_to_spks(file)
-                    count+=1
+        # dict = self.MATs
+        # name = 'all_mats'
+        # write_dict(dict,path,name)
 
         return self.MATs, self.PCs
 
-    def pc_plot(self,key,moment):
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        fig.set_figheight(15)
-        fig.set_figwidth(15)
+    # def analysis_loop(self,config):
+    #     np.seterr(divide='ignore', invalid='ignore')
+    #     experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
+    #     count = 0
+    #     self.MATs = {}
+    #     self.PCs = {}
+    #     for exp in range(experiments):
+    #         for pat,label in enumerate(config.classes):
+    #             for r in range(config.replicas):
+    #                 filename = os.listdir(self.directory)[count]
+    #                 file = os.path.join(self.directory, filename)
+    #                 if (count) % 9 == 0:
+    #                     a = file
+    #                     b = '_pat'
+    #                     pat_loc = [(i, i+len(b)) for i in range(len(a)) if a[i:i+len(b)] == b]
+    #                     exp_name=file[len(self.directory)+1:pat_loc[0][0]]
+    #                     print(f"{exp}-{count} experiment: {exp_name}")
 
-        #markers = ["$A$","$B$","$C$"]
-        markers = ["$ZERO$","$ONE$","$TWO$"]
-        colors = ['r','g','b']
+    #                     mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
+    #                     mat = np.load(mat_path, allow_pickle=True)
 
-        for i,position in enumerate(self.PCs[key][moment]):
-            ax.scatter(position[0],position[1],position[2],marker=markers[i],color=colors[i],s=750,label=config.classes[i])
+    #                     # # Across each replica within a pattern
+    #                     # pcs_times = []
+    #                     # for t in range(config.length):
+    #                     #     step = 0
+    #                     #     pc_pats = []
+    #                     #     for p,pattern in enumerate(config.classes):
+    #                     #         norms = []
+    #                     #         for r in range(config.replicas):
+    #                     #             slice = mat[step][:,t]
+    #                     #             norm = np.array(slice) - np.mean(slice)
+    #                     #             norms.append(norm)
+    #                     #             step+=1
+    #                     #         norms = np.array(norms)
+    #                     #         pc_obj = PCA(n_components=3)
+    #                     #         pc_slice = pc_obj.fit_transform(norms)
+    #                     #         pc_pat = pc_slice[:,0]
+    #                     #         pc_pats.append(pc_pat)
+    #                     #     pcs_times.append(np.array(pc_pats))
+    #                     # pcs_times = np.array(pcs_times)
 
-        plt.xlim(-5,5)
-        plt.ylim(-5,5)
-        ax.set_zlim(-5,5)
-        plt.legend()
+    #                     # Across all
+    #                     pcs_times = []
+    #                     for t in range(config.length):
+    #                         step = 0
+    #                         pc_pats = []
+    #                         norms = []
+    #                         for p,pattern in enumerate(config.classes):
+    #                             # norms = []
+    #                             for r in range(config.replicas):
+    #                                 slice = mat[step][:,t]
+    #                                 norm = np.array(slice) - np.mean(slice)
+    #                                 norms.append(norm)
+    #                                 step+=1
+    #                         norms = np.array(norms)
+    #                         pc_obj = PCA(n_components=3)
+    #                         pc_slice = pc_obj.fit_transform(norms)
+    #                         #print(pc_slice)
+    #                         pcs_times.append(np.array(pc_slice))
+    #                     pcs_times = np.array(pcs_times)
+    #                     self.MATs[exp_name] = mat
+    #                     self.PCs[exp_name] = pcs_times
 
-        # ax.set_xlabel('Replica 0 Component')
-        # ax.set_ylabel('Replica 1 Component')
-        # ax.set_zlabel('Replica 2 Component')
-        plt.title("Positions in PCA Space",fontsize=24)
-        if save == True:
-            dirName = f"results/{config.dir}/analysis/PCs/{key}/"
-            try:
-                os.makedirs(dirName)    
-            except FileExistsError:
-                pass
-            plt.savefig(f'results/{config.dir}/analysis/PCs/{key}PC_t={moment}.png')
-        if show == True:
-            plt.show()
-        plt.close()
+    #                 #dat,indices,times = txt_to_spks(file)
+    #                 count+=1
+        
+    #     dict = self.PCs
+    #     path = f'results/{config.dir}/analysis/'
+    #     name = 'all_pcs'
+    #     write_dict(dict,path,name)
 
-    def full_pc_plot(self,key,moment):
+    #     return self.MATs, self.PCs
+
+
+    def full_pc_plot(self,config,key,moment):
+        """
+        Plot PC coordinates for all samples in an experiment
+         - Include centroids of each class
+        """
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
         fig.set_figheight(15)
@@ -361,59 +421,31 @@ class StateAnalysis():
             mean_pat = np.mean(np.array(pat_pos),axis=0)
             ax.scatter(mean_pat[0],mean_pat[1],mean_pat[2],marker='.',color=colors[i],s=350,label=config.classes[i])
 
-        plt.xlim(-5,5)
-        plt.ylim(-5,5)
-        ax.set_zlim(-5,5)
+        plt.xlim(-2.5,2.5)
+        plt.ylim(-2.5,2.5)
+        ax.set_zlim(-2.5,2.5)
         # plt.legend()
         ax.set_xlabel('Component 1')
         ax.set_ylabel('Component 2')
         ax.set_zlabel('Component 3')
         plt.title("Positions in PCA Space",fontsize=24)
-        if save == True:
+        if self.save == True:
             dirName = f"results/{config.dir}/analysis/full_PCs/{key}"
             try:
                 os.makedirs(dirName)    
             except FileExistsError:
                 pass
             plt.savefig(f'results/{config.dir}/analysis/full_PCs/{key}/PC_t={moment}.png')
-        if show == True:
+        if self.show == True:
             plt.show()
         plt.close()
 
-    def path_plot(self,key):
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        fig.set_figheight(25)
-        fig.set_figwidth(25)
-
-        #markers = ["$A$","$B$","$C$"]
-        markers = ["$ZERO$","$ONE$","$TWO$"]
-        labels=["ZERO","ONE","TWO"]
-        colors = ['r','g','b']
-        x = []
-        y = []
-        z = []
-
-        for i in range(config.patterns):
-            xs = self.PCs[key][:,i][:,0]
-            ys = self.PCs[key][:,i][:,1]
-            zs = self.PCs[key][:,i][:,2]
-            plt.plot(xs,ys,zs, linewidth = .5,color=colors[i],label=labels[i])
-
-        plt.xlim(-5,5)
-        plt.ylim(-5,5)
-        ax.set_zlim(-5,5)
-        plt.legend()
-        plt.title(f"Positions in PCA Space Traced Across Time\n{key}",fontsize=24)
-        dirName = f"results/{config.dir}/analysis/paths/"
-        try:
-            os.makedirs(dirName)    
-        except FileExistsError:
-            pass
-        plt.savefig(f'results/{config.dir}/analysis/paths/paths_{key}.png')
-        plt.close()
-
-    def full_path_plot(self,key):
+    def full_path_plot(self,config,key,range_low,range_high):
+        """
+        Plot path of a PC centroids for each class in an experiment
+            - range arguemnts define time frame of path
+            - if none, range of full experiment by default
+        """
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
         fig.set_figheight(25)
@@ -428,7 +460,11 @@ class StateAnalysis():
         y = [[] for _ in range(config.patterns)]
         z = [[] for _ in range(config.patterns)]
 
-        for t in range(config.length):
+        if range_low == None:
+            range_low = 0
+            range_high = config.length
+        
+        for t in range(range_low,range_high):
             count=0
             for i,pat in enumerate(config.classes):
                 pat_pos = []
@@ -447,125 +483,46 @@ class StateAnalysis():
             zs = z[i]
             plt.plot(xs,ys,zs, linewidth = .5,color=colors[i],label=labels[i])
 
-        plt.xlim(-5,5)
-        plt.ylim(-5,5)
-        ax.set_zlim(-5,5)
+        plt.xlim(-2.5,2.5)
+        plt.ylim(-2.5,2.5)
+        ax.set_zlim(-2.5,2.5)
         plt.legend()
-        plt.title(f"Average Replica Positions in PCA Space Traced Across Time\n{key}",fontsize=24)
-        if save == True:
+        if range_low == None:
+            plt.title(f"Average Replica Positions in PCA Space Traced Across Time\n{key}",fontsize=24)
             dirName = f"results/{config.dir}/analysis/full_paths/"
+        else:
+            plt.title(f"Average Replica Positions in PCA Space Traced Across Time from {range_low} to {range_high}\n{key}",fontsize=24)
+            dirName = f'results/{config.dir}/analysis/full_paths[{range_low}{range_high}]/'
+        if self.save == True:
             try:
                 os.makedirs(dirName)    
             except FileExistsError:
                 pass
-            plt.savefig(f'results/{config.dir}/analysis/full_paths/paths_{key}.png')
-        if show == True:
+            if range_low == None:
+                plt.savefig(f'results/{config.dir}/analysis/full_paths/paths_{key}.png')
+            else:
+                plt.savefig(f'results/{config.dir}/analysis/full_paths[{range_low}{range_high}]/paths_{key}.png')
+        if self.show == True:
             plt.show()
         plt.close()
     
 
-class MetaAnalysis():
+class DistanceAnalysis():
     def __init__(self,config,save,show):
-        self.save = save
-        self.show = show
-        self.directory = f'results/{config.dir}/'
-
-    def show_all(self,key):
-        # import cv2
-        # for pat in config.classes:
-        #     plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{pat}_rep0.png')
-        #     plot.show()
-        # plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
-        # plot.show()
-        plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
-        plot.show()
-
-        # img1 = cv2.imread(f'{self.directory}/analysis/full_paths/paths_{key}.png')
-        # img2 = cv2.imread(f'{self.directory}/performance/plots/{key}_performance.png')
-        # print(img1.shape, img2.shape)
-        # movex=1000
-        # movey=1000
-        # img1 = img1[movex:movex+img2.shape[0],movey:movey+img2.shape[1]]
-        # print(img1.shape)
-        # horz = np.concatenate((img1, img2), axis=1)
-        # cv2.imshow('Title', horz)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-    # def control_test(self,second_sweep):
-
-
-
-sweep = "hei_phei"
-
-directory = f'results/{sweep}/configs'
-filename = os.listdir(directory)[1]
-file = os.path.join(directory, filename)
-file_to_read = open(file, "rb")
-config = pickle.load(file_to_read)
-file_to_read.close()
-save = True
-show = False
-
-full_analysis = PerformanceAnalysis(config,save,show)
-full_analysis.performance_pull()
-finals, totals = full_analysis.rankings()
-full_analysis.print_rankings(finals,"Final Performance",336)
-
-full_analysis.print_rankings(totals,"Total Performance",336)
-# full_analysis.performance_statistics(finals,20)
-# # full_analysis.hist_ranked()
-
-# top_finals=dict(itertools.islice(finals.items(),8))
-# top_totals=dict(itertools.islice(totals.items(),8))
-
-# full_analysis.print_rankings(totals,"Final Performance",10)
-
-# config.dir = sweep + "_rerun"
-# re_analysis = PerformanceAnalysis(config,save,show)
-# re_analysis.performance_pull()
-# refinals, retotals = re_analysis.rankings()
-# # full_analysis.performance_statistics(finals,20)
-# # full_analysis.hist_ranked()
-
-# # top_finals=dict(itertools.islice(finals.items(),8))
-# # top_totals=dict(itertools.islice(totals.items(),8))
-
-# re_analysis.print_rankings(retotals,"Final Performance",10)
-
-# for i,(k,v) in enumerate(full_analysis.all_finals.items()):
-#     print(np.abs(v - re_analysis.all_finals[k]))
-
-### STATES ###
-state_analysis = StateAnalysis(config,save,show)
-MATs, PCs = state_analysis.analysis_loop()
-
-# # key = 'Maass_geo=(randNone_geo[45, 3, 1]_smNone)_N=135_IS=0.17_RS=0.3_ref=3.0_delay=1.5_U=0.6'
-# key = 'LSTP_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=0.0_U=0.6'
-
-## Plot all full paths ##
-# for i in range(len(PCs)):
-#     state_analysis.full_path_plot(list(PCs)[i])
-
-## Plot all PCs for one config ## 
-# for t in range(config.length):
-#     state_analysis.full_pc_plot(list(totals)[-1],t)
-
-# for t in range(config.length):
-#     state_analysis.pc_plot(list(PCs)[23],t)
-    # state_analysis.pc_plot('Maass_geo=(randNone_geo[9, 5, 3]_smNone)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=1.5_U=0.6',t)
-
-
-
-#%%
-class DistsanceAnalysis():
-    def __init__(self,MATs,PCs,config,save,show):
         self.save = save
         self.show = show
         # self.directory = f'results/{config.dir}/'
 
-
-    def distance_measure(self,single):
+    def distance_measure(self,config,single):
+        """
+        Determine and store the following metrics for states at each time
+            - Intra class mean position
+            - Intra class total separation
+            - Inter class separation distnaces (between centroids)
+                - Note, should try paiwise
+            - K-means clusterabilty
+            - Difference between total inter and intra(normalized)
+        """
         reps = config.replicas
         intra_ranges = [[x*reps,x*reps+reps] for x in range(config.patterns)]
         intra_t = []
@@ -603,7 +560,10 @@ class DistsanceAnalysis():
         #print(diff_t)
         return intra_t, intra_mean_dist_t, inter_t,clust_t,diff_t
 
-    def all_dists(self):
+    def all_dists(self,config,MATs):
+        """
+        Perform and store distance measures for all experiments
+        """
         self.intra = {}
         self.intra_mean_dist = {}
         self.inter= {}
@@ -612,42 +572,237 @@ class DistsanceAnalysis():
         self.diff_sum = {}
         for i,(k,v) in enumerate(MATs.items()):
             print(i," - ",k)
-            self.intra[k], self.intra_mean_dist[k], self.inter[k], self.clust[k], self.diff[k] = self.distance_measure(v)
+            self.intra[k], self.intra_mean_dist[k], self.inter[k], self.clust[k], self.diff[k] = self.distance_measure(config,v)
             if np.sum(self.clust[k])>0:
-                print(f"Clustering with {np.sum(self.clust[k])} success")
+                print(f"         {np.sum(self.clust[k])} successful moments of clustering!")
             self.diff_sum[k] =  np.sum(self.diff[k])
         
         dist_ranked = dict(reversed(sorted(self.diff_sum.items(), key=lambda item: item[1])))
         for k,v in dist_ranked.items():
             print(np.round(v,4)," - ",k)
+
+
+        dirName = f'results/{config.dir}/analysis/distance_measures/'
+        try:
+            os.makedirs(dirName)    
+        except FileExistsError:
+            pass
+
+        write_dict(self.intra,dirName,"intra")
+        write_dict(self.intra_mean_dist,dirName,"intra_mean")
+        write_dict(self.inter,dirName,"inter")
+        write_dict(self.clust,dirName,"clust")
+        write_dict(self.diff,dirName,"diff")
+        write_dict(self.diff_sum,dirName,"dif_sum")
             
-
-from sklearn.cluster import KMeans
-from scipy.spatial import distance
-import warnings
-dist = DistsanceAnalysis(config,MATs,PCs,save,show)
-# single = MATs[list(MATs)[0]]
-# dist.distance_measure(single)v
-dist.all_dists()
-#%%
-ordered_distance = []
-plt.figure(figsize=(10,10))
-for k in totals.keys():
-    ordered_distance.append(dist.diff_sum[k])
-plt.plot(ordered_distance,'.k')
-#%%
-
-
-### META ###
-
-meta = MetaAnalysis(config,save,show)
-# meta.show_all(list(totals)[0])
-
-# for k in top_finals.keys():
-    # meta.show_all(k)
-
-for k in list(totals)[-30:-10]:
-    meta.show_all(k)
+    def dist_plot(self,dict):
+        """
+        Plot distances over performance rankings
+        """
+        ordered_distance = []
+        plt.figure(figsize=(10,10))
+        for k in dict.keys():
+            ordered_distance.append(self.diff_sum[k])
+        plt.plot(ordered_distance,'.k')
+        if self.save==True:
+            path = f'results/{self.sweep}/analysis/distance_plot.png'
+            plt.savefig(path)
+        if self.show==True:
+            plt.show()
+        else:
+            plt.close()
 
 
+class MetaAnalysis():
+    def __init__(self,config,save,show):
+        self.save = save
+        self.show = show
+        self.directory = f'results/{config.dir}/'
+
+    def show_all(self,key):
+        """"
+        Show relevant plots for specific experiment
+        """
+        plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{config.classes[0]}_rep0.png')
+        plot.show()
+        plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
+        plot.show()
+        plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
+        plot.show()
+
+    def dict_compare(self,config,dict1,dict2):
+        """
+        Compare relationship between two ranked dictionaries
+         - For each exerpiment, store position from each dict
+        """
+        I = []
+        J = []
+        same = 0
+        for i, (k1,v1) in enumerate(dict1.items()):
+            for j, (k2,v2) in enumerate(dict2.items()):
+                if k1 == k2:
+                    I.append(i)
+                    J.append(j)
+        
+        total_difference=0
+        for i in range(len(I)):
+            total_difference+= np.abs(I[i] - J[i])
+            if I[i] - J[i] ==0:
+                same+=1
+        print("Total difference in rankings: ",total_difference)
+        print("Amound of exact same rankings: ",same,"/",len(dict1))
+        return I,J
+
+    def ranking_comparison_plot(self,I,J):
+        """"
+        Plot lines between rankings (thinkness for closer orderings)
+        """
+        N = len(I) + 1
+        I = np.array(I) + 1
+        J = np.array(J) + 1
+        plt.figure(figsize=(16, 10))
+        plt.plot(np.zeros(N-1), np.arange(1,N,1, dtype=int), 'ok', ms=100/N, color='orange')
+        plt.plot(np.ones(N-1), np.arange(1,N,1, dtype=int), 'ok', ms=100/N, color='blue')
+        # print(np.arange(1,N,1, dtype=int))
+        for i, j in zip(I, J):
+            plt.plot([0, 1], [i, j], '-k', linewidth=5/(np.abs(i-j)*2+1))
+        plt.title("Ranking Comparison Between PCA Separation and Performance", fontsize=24)
+        plt.xticks([0, 1], ['PCA', 'Performance'], fontsize=22)
+        plt.ylabel('Experiment Configuration Ranking', fontsize=22)
+        plt.xlim(-0.1, 1.1)
+        plt.ylim(np.max(I)+np.int(N/10), np.min(I)-np.int(N/10))
+        plt.yticks(np.arange(1,N,16, dtype=int))
+
+        type = 'means_only'
+
+        #plt.savefig(f"results/{sweep}/performance/rank_compare_{sweep}_{type}.png")
+        plt.show()
+
+    # def control_test(self,second_sweep):
+
+
+# sweep = "hei_large2"
+
+# directory = f'results/{sweep}/configs'
+# filename = os.listdir(directory)[1]
+# file = os.path.join(directory, filename)
+# file_to_read = open(file, "rb")
+# config = pickle.load(file_to_read)
+# file_to_read.close()
+# save = False
+# show = True
+
+# dirName = f'results/{sweep}/analysis/distance_measures/'
+# item = 'dif_sum'
+# diff_sum = read_json(dirName,item)
+# item = 'clust'
+# clust = read_json(dirName,item)
+# clusts = {}
+
+# clustered = 0
+# for k,v in clust.items():
+#     clusts[k] = np.sum(v)
+#     if np.sum(v) >0:
+#         clustered+=1
+# print(clustered)
+# clusts = dict(sorted(clusts.items(), key=lambda item: item[1],reverse=True))
+
+
+# full_analysis = PerformanceAnalysis(config,save,show)
+# full_analysis.performance_pull()
+# finals, totals = full_analysis.rankings()
+# full_analysis.print_rankings(finals,"Final Performance",20)
+# full_analysis.print_rankings(totals,"Total Performance",20)
+
+# meta = MetaAnalysis(config,save,show)
+# I,J =  meta.dict_compare(config,totals,clusts)
+# meta.ranking_comparison_plot(I,J)
+
+# # meta.show_all(list(totals)[0])
+
+# # for k in list(finals)[:10]:
+# #     meta.show_all(k)
+
+# # full_analysis.print_rankings(finals,"Final Performance",336)
+
+# # full_analysis.print_rankings(totals,"Total Performance",336)
+# # # full_analysis.performance_statistics(finals,20)
+# # # # full_analysis.hist_ranked()
+
+# # # top_finals=dict(itertools.islice(finals.items(),8))
+# # # top_totals=dict(itertools.islice(totals.items(),8))
+
+# # # full_analysis.print_rankings(totals,"Final Performance",10)
+
+# # # config.dir = sweep + "_rerun"
+# # # re_analysis = PerformanceAnalysis(config,save,show)
+# # # re_analysis.performance_pull()
+# # # refinals, retotals = re_analysis.rankings()
+# # # # full_analysis.performance_statistics(finals,20)
+# # # # full_analysis.hist_ranked()
+
+# # # # top_finals=dict(itertools.islice(finals.items(),8))
+# # # # top_totals=dict(itertools.islice(totals.items(),8))
+
+# # # re_analysis.print_rankings(retotals,"Final Performance",10)
+
+# # # for i,(k,v) in enumerate(full_analysis.all_finals.items()):
+# # #     print(np.abs(v - re_analysis.all_finals[k]))
+
+# # ### STATES ###
+# # state_analysis = StateAnalysis(config,save,show)
+# # MATs, PCs = state_analysis.analysis_loop()
+
+# # # # key = 'Maass_geo=(randNone_geo[45, 3, 1]_smNone)_N=135_IS=0.17_RS=0.3_ref=3.0_delay=1.5_U=0.6'
+# # # key = 'LSTP_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=0.0_U=0.6'
+
+# # ## Plot all full paths ##
+# # # for i in range(len(PCs)):
+# # #     state_analysis.full_path_plot(list(PCs)[i])
+
+# # ## Plot all PCs for one config ## 
+# # # for t in range(config.length):
+# # #     state_analysis.full_pc_plot(list(totals)[-1],t)
+
+# # # for t in range(config.length):
+# # #     state_analysis.pc_plot(list(PCs)[23],t)
+# #     # state_analysis.pc_plot('Maass_geo=(randNone_geo[9, 5, 3]_smNone)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=1.5_U=0.6',t)
+
+
+
+# # #%%
+
+
+
+# # # from sklearn.cluster import KMeans
+# # # from scipy.spatial import distance
+# # # import warnings
+# # # dist = DistsanceAnalysis(config,MATs,PCs,save,show)
+# # # # single = MATs[list(MATs)[0]]
+# # # # dist.distance_measure(single)v
+# # # dist.all_dists()
+# # # #%%
+# # # ordered_distance = []
+# # # plt.figure(figsize=(10,10))
+# # # for k in totals.keys():
+# # #     ordered_distance.append(dist.diff_sum[k])
+# # # plt.plot(ordered_distance,'.k')
+# # #%%
+
+
+# # ### META ###
+
+# # meta = MetaAnalysis(config,save,show)
+# # # meta.show_all(list(totals)[0])
+
+# # # for k in top_finals.keys():
+# #     # meta.show_all(k)
+
+# # # for k in list(totals)[-30:-10]:
+# # #     meta.show_all(k)
+
+
+
+
+# %%
 

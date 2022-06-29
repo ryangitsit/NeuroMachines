@@ -166,7 +166,8 @@ class Input:
         count = 0
         for i,pattern in enumerate(classes):
             print("Pattern: ", pattern)
-            rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low, config.rate_high, config.length)
+            print(config.rate_low+i*20, config.rate_high + i*20)
+            rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low+i*5, config.rate_high + i*5, config.length)
             rates_dict[pattern] = rand_rates
             for r in range(replicas):
                 print(" Replica: ", r)
@@ -223,12 +224,12 @@ class Input:
                 item = f'pat{k}_rep{i}'
                 save_spikes(self.channels,self.length,input_times*1000,input_units,loc,item)
 
-inputs = Input(config)
-dataset = inputs.read_data(config)
-print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
-for k,v in dataset.items():
-    print(f"  Pattern {k} at indices {v}")
-inputs.describe()
+# inputs = Input(config)
+# dataset = inputs.read_data(config)
+# print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
+# for k,v in dataset.items():
+#     print(f"  Pattern {k} at indices {v}")
+# inputs.describe()
 
 #%%
 
@@ -251,9 +252,9 @@ class LiquidState():
     def respond(self,config,inputs,dataset):
 
         if inputs.input_name == 'Poisson':
-            config.DT = 1
+            config.DT = 1000
         elif inputs.input_name =='Heidelberg':
-            config.DT = 100
+            config.DT = 1000
 
         start_scope()
         G, S, W = reservoir(config)
@@ -279,32 +280,37 @@ class LiquidState():
                 #################
                 example = inputs.dataset[pat][rep]
                 timed = inputs.times[example]*ms
-
+                print("  Spike generator")
                 SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
 
                 SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
                 SP.connect(p=config.input_sparsity)
                 spikemon = SpikeMonitor(G)
                 nets.add(SGG, SP, spikemon)
+                print("  Simulation")
                 nets.run((config.length)*ms)
                 indices = np.array(spikemon.i)
                 times = np.array(spikemon.t/ms)
+                print("  Encoding")
                 mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
                 nets.remove(SGG,SP,spikemon)
                 nets.restore()
+                print("  Restoring")
                 #################
                 #################
+                
                 if rep == 0:
+                    print("Saving Spikes")
                     save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq)
 
         storage_mats = np.array(mats)
         # print(storage_mats)
-        dirName = f"results/{config.dir}/performance/liquids/encoded/"
+        dirName = f"results/{config.dir}/liquid/encoded/"
         try:
             os.makedirs(dirName)    
         except FileExistsError:
             pass
-        with open(f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy', 'wb') as f:
+        with open(f'results/{config.dir}/liquid/encoded/mat_{config.full_loc}.npy', 'wb') as f:
             np.save(f, storage_mats, allow_pickle=True)
 
 
@@ -321,7 +327,7 @@ class ReadoutMap():
 
     def setup(self,config):
         print(" --- PREPARE TRAIN/TEST LIQUID STATE DATA ---")
-        mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{config.full_loc}.npy'
+        mat_path = f'results/{config.dir}/liquid/encoded/mat_{config.full_loc}.npy'
         mats = np.load(mat_path, allow_pickle=True)
         labels=[]
         
@@ -360,14 +366,14 @@ class ReadoutMap():
         self.target = np.concatenate([self.full_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
         self.testing = np.concatenate([self.full_train[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
         self.test_target = np.concatenate([self.full_labels[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
-        chunk_size = 1
+        self.chunk_size = 1
         if config.chunk>1:
             ########################################  
                         # CHUNKING #    
             ########################################      
             print(" --- chunking ---")
             chunk_size = config.chunk
-            print(len(self.full_train))
+            # print(len(self.full_train))
             all_chunks = []
             count=0
             chunk_labels = []
@@ -382,7 +388,7 @@ class ReadoutMap():
 
             LENGTH = config.patterns*config.replicas*config.length
             c_split = int(self.train_range/chunk_size)  
-            print(c_split)
+            # print(c_split)
             
             ratio = self.split/(config.replicas*config.patterns)
             pat_step = int(config.length*config.replicas/chunk_size)
@@ -409,8 +415,8 @@ class ReadoutMap():
         for i in range(len(self.testing)):
             prediction = logisticRegr.predict(self.testing[i].reshape(1, -1))
             predictions.append(prediction[0])
-        print(predictions)
-        print(self.test_target)
+        # print(predictions)
+        # print(self.test_target)
 
         raw_success = 0
         for i in range(len(predictions)):
@@ -430,7 +436,6 @@ class ReadoutMap():
             for j in range(int(config.length/self.chunk_size)):
                 run.append(predictions[count])
                 pred_index = config.classes.index(predictions[count])
-                print(pred_index)
                 pre_labs[i][pred_index] += 1
                 top_pred = config.classes[np.argmax(pre_labs[i])]
 

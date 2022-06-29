@@ -1,0 +1,134 @@
+MSVC environment: 
+allusersprofile=C:\ProgramData
+appdata=C:\Users\rmolo\AppData\Roaming
+chocolateyinstall=C:\ProgramData\chocolatey
+chocolateylastpathupdate=132787940917587639
+chrome_crashpad_pipe_name=\\.\pipe\crashpad_18524_CRKTNHDWDZBQNPFS
+commandprompttype=Cross
+commonprogramfiles=C:\Program Files\Common Files
+commonprogramfiles(x86)=C:\Program Files (x86)\Common Files
+commonprogramw6432=C:\Program Files\Common Files
+computername=DESKTOP-FLMFTVL
+comspec=C:\Windows\system32\cmd.exe
+devenvdir=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\
+driverdata=C:\Windows\System32\Drivers\DriverData
+extensionsdkdir=C:\Program Files (x86)\Microsoft SDKs\Windows Kits\10\ExtensionSDKs
+fps_browser_app_profile_string=Internet Explorer
+fps_browser_user_profile_string=Default
+framework40version=v4.0
+frameworkdir=C:\Windows\Microsoft.NET\Framework\
+frameworkdir32=C:\Windows\Microsoft.NET\Framework\
+frameworkdir64=C:\Windows\Microsoft.NET\Framework64\
+frameworkversion=v4.0.30319
+frameworkversion32=v4.0.30319
+frameworkversion64=v4.0.30319
+helm=C:\Users\rmolo\Desktop\WACC\helm-v3.7.1-windows-amd64
+homedrive=C:
+homepath=\Users\rmolo
+include=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\ucrt;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\shared;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\winrt;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\cppwinrt
+kmp_duplicate_lib_ok=True
+kmp_init_at_fork=FALSE
+lib=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\lib\x64;C:\Program Files (x86)\Windows Kits\10\lib\10.0.19041.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\lib\10.0.19041.0\um\x64
+libpath=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\lib\x64;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\lib\x86\store\references;C:\Program Files (x86)\Windows Kits\10\UnionMetadata\10.0.19041.0;C:\Program Files (x86)\Windows Kits\10\References\10.0.19041.0;C:\Windows\Microsoft.NET\Framework\v4.0.30319
+localappdata=C:\Users\rmolo\AppData\Local
+logonserver=\\DESKTOP-FLMFTVL
+moz_plugin_path=C:\Program Files (x86)\Foxit Software\Foxit PDF Reader\plugins\
+number_of_processors=8
+onedrive=C:\Users\rmolo\OneDrive
+onedriveconsumer=C:\Users\rmolo\OneDrive
+original_xdg_current_desktop=undefined
+os=Windows_NT
+path=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\bin\HostX86\x64;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\bin\HostX86\x86;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\VC\VCPackages;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\TestWindow;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\bin\Roslyn;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\devinit;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86;C:\Program Files (x86)\Windows Kits\10\bin\x86;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\\MSBuild\Current\Bin;C:\Windows\Microsoft.NET\Framework\v4.0.30319;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\;C:\Program Files (x86)\VMware\VMware Player\bin\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\Program Files\PuTTY\;C:\Program Files\MATLAB\R2021a\bin;C:\Program Files\Docker\Docker\resources\bin;C:\ProgramData\DockerDesktop\version-bin;C:\Program Files\nodejs\;C:\Program Files\Kubernetes\Minikube;C:\ProgramData\chocolatey\bin;C:\Users\rmolo\Desktop\WACC\helm-v3.7.1-windows-amd64;C:\Program Files\dotnet\;C:\Users\rmolo\AppData\Local\Programs\Python\Python38\Scripts\;C:\Users\rmolo\AppData\Local\Programs\Python\Python38\;C:\Users\rmolo\AppData\Local\Programs\Python\Python39\Scripts\;C:\Users\rmolo\AppData\Local\Programs\Python\Python39\;C:\Users\rmolo\AppData\Local\Microsoft\WindowsApps;C:\Users\rmolo\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\Graphviz\bin;C:\Users\rmolo\AppData\Roaming\npm;C:\Users\rmolo\binaries;;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja
+pathext=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.CPL
+platform=x64
+processor_architecture=AMD64
+processor_identifier=Intel64 Family 6 Model 140 Stepping 1, GenuineIntel
+processor_level=6
+processor_revision=8c01
+programdata=C:\ProgramData
+programfiles=C:\Program Files
+programfiles(x86)=C:\Program Files (x86)
+programw6432=C:\Program Files
+prompt=$P$G
+psmodulepath=C:\Users\rmolo\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+public=C:\Users\Public
+sessionname=Console
+systemdrive=C:
+systemroot=C:\Windows
+temp=C:\Users\rmolo\AppData\Local\Temp
+tf_xla_flags=--tf_xla_enable_xla_devices
+tmp=C:\Users\rmolo\AppData\Local\Temp
+ucrtversion=10.0.19041.0
+universalcrtsdkdir=C:\Program Files (x86)\Windows Kits\10\
+userdomain=DESKTOP-FLMFTVL
+userdomain_roamingprofile=DESKTOP-FLMFTVL
+username=rmolo
+userprofile=C:\Users\rmolo
+vcideinstalldir=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\VC\
+vcinstalldir=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\
+vctoolsinstalldir=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\
+vctoolsredistdir=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\14.29.30133\
+vctoolsversion=14.29.30133
+visualstudioversion=16.0
+vs160comntools=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\
+vscmd_arg_app_plat=Desktop
+vscmd_arg_host_arch=x86
+vscmd_arg_tgt_arch=x64
+vscmd_ver=16.11.10
+vsinstalldir=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\
+windir=C:\Windows
+windowslibpath=C:\Program Files (x86)\Windows Kits\10\UnionMetadata\10.0.19041.0;C:\Program Files (x86)\Windows Kits\10\References\10.0.19041.0
+windowssdkbinpath=C:\Program Files (x86)\Windows Kits\10\bin\
+windowssdkdir=C:\Program Files (x86)\Windows Kits\10\
+windowssdklibversion=10.0.19041.0\
+windowssdkverbinpath=C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\
+windowssdkversion=10.0.19041.0\
+zes_enable_sysman=1
+term_program=vscode
+term_program_version=1.60.2
+lang=en_US.UTF-8
+colorterm=truecolor
+vscode_git_ipc_handle=\\.\pipe\vscode-git-a7f3f1149a-sock
+git_askpass=c:\Users\rmolo\AppData\Local\Programs\Microsoft VS Code\resources\app\extensions\git\dist\askpass.sh
+vscode_git_askpass_node=C:\Users\rmolo\AppData\Local\Programs\Microsoft VS Code\Code.exe
+vscode_git_askpass_main=c:\Users\rmolo\AppData\Local\Programs\Microsoft VS Code\resources\app\extensions\git\dist\askpass-main.js
+__devinit_path=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\devinit\devinit.exe
+__dotnet_add_32bit=1
+__dotnet_add_64bit=1
+__dotnet_preferred_bitness=32
+__vscmd_preinit_path=C:\Program Files (x86)\VMware\VMware Player\bin\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\Git\cmd;C:\Program Files\PuTTY\;C:\Program Files\MATLAB\R2021a\bin;C:\Program Files\Docker\Docker\resources\bin;C:\ProgramData\DockerDesktop\version-bin;C:\Program Files\nodejs\;C:\Program Files\Kubernetes\Minikube;C:\ProgramData\chocolatey\bin;C:\Users\rmolo\Desktop\WACC\helm-v3.7.1-windows-amd64;C:\Program Files\dotnet\;C:\Users\rmolo\AppData\Local\Programs\Python\Python38\Scripts\;C:\Users\rmolo\AppData\Local\Programs\Python\Python38\;C:\Users\rmolo\AppData\Local\Programs\Python\Python39\Scripts\;C:\Users\rmolo\AppData\Local\Programs\Python\Python39\;C:\Users\rmolo\AppData\Local\Microsoft\WindowsApps;C:\Users\rmolo\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\Graphviz\bin;C:\Users\rmolo\AppData\Roaming\npm;C:\Users\rmolo\binaries;
+py_vcruntime_redist=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\..\..\redist\MSVC\14.29.30133\onecore\x64\Microsoft.VC142.CRT\vcruntime140.dll
+
+Microsoft (R) Program Maintenance Utility Version 14.29.30140.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+	cl /c /EHsc /I. -Ibrianlib/randomkit -IC:\Users\rmolo\AppData\Local\Programs\Python\Python38\Library\include /Ox /w /arch:AVX2 /MP  code_objects/after_run_poissongroup_thresholder_codeobject.cpp /Focode_objects\after_run_poissongroup_thresholder_codeobject.obj
+Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30140 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+after_run_poissongroup_thresholder_codeobject.cpp
+	cl /c /EHsc /I. -Ibrianlib/randomkit -IC:\Users\rmolo\AppData\Local\Programs\Python\Python38\Library\include /Ox /w /arch:AVX2 /MP  code_objects/poissongroup_thresholder_codeobject.cpp /Focode_objects\poissongroup_thresholder_codeobject.obj
+Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30140 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+poissongroup_thresholder_codeobject.cpp
+	cl /c /EHsc /I. -Ibrianlib/randomkit -IC:\Users\rmolo\AppData\Local\Programs\Python\Python38\Library\include /Ox /w /arch:AVX2 /MP  code_objects/spikemonitor_codeobject.cpp /Focode_objects\spikemonitor_codeobject.obj
+Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30140 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+spikemonitor_codeobject.cpp
+	cl /c /EHsc /I. -Ibrianlib/randomkit -IC:\Users\rmolo\AppData\Local\Programs\Python\Python38\Library\include /Ox /w /arch:AVX2 /MP  main.cpp /Fomain.obj
+Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30140 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+main.cpp
+	cl /c /EHsc /I. -Ibrianlib/randomkit -IC:\Users\rmolo\AppData\Local\Programs\Python\Python38\Library\include /Ox /w /arch:AVX2 /MP  objects.cpp /Foobjects.obj
+Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30140 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+objects.cpp
+	link @sourcefiles.txt /LIBPATH:brianlib/randomkit /LIBPATH:C:\Users\rmolo\AppData\Local\Programs\Python\Python38\Library\lib advapi32.lib /LIBPATH:. /OUT:main.exe
+Microsoft (R) Incremental Linker Version 14.29.30140.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+brianlib\randomkit\randomkit code_objects\after_run_poissongroup_thresholder_codeobject code_objects\poissongroup_thresholder_codeobject code_objects\spikemonitor_codeobject main network objects run synapses_classes 

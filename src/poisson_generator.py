@@ -1,6 +1,7 @@
 from brian2 import *
 import numpy as np
 
+
 def gen_poisson_pattern(channels, rate_low, rate_high, sim):
     """
     Poisson Pattern Generator
