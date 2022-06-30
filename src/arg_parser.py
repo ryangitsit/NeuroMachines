@@ -10,7 +10,7 @@ def setup_argument_parser():
     parser.add_argument("--input_name", help = " ", type = str, default = "Poisson") #""Heidelberg")
     parser.add_argument("--input_file", help = " ", type = str, default = "shd_train.h5")
     parser.add_argument("--classes", help = " ", type = str, default = ["A","B","C"])
-
+    parser.add_argument("--feed", help = " ", choices = ['reset','continuous'], type = str, default = "reset")
     # input
     parser.add_argument("--patterns", help = " ", type = int, default = 3)
     parser.add_argument("--length", help = " ", type = int, default = 100)
