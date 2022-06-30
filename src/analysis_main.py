@@ -11,7 +11,8 @@ Execution file for full_analysis.py
 
 
 def main():
-    sweep = "hei_test"
+    sweep = "hei_large2_nochunkX"
+    # sweep = "hei_large2"
     save = True
     show = False
 
@@ -23,9 +24,9 @@ def main():
     config = pickle.load(file_to_read)
     file_to_read.close()
 
-    config.patterns = 3
-    config.replicas = 3
-    config.classes = config.classes[:config.patterns]
+    # config.patterns = 3
+    # config.replicas = 3
+    # config.classes = config.classes[:config.patterns]
 
     ### Performance Analysis ###
     """
@@ -40,7 +41,7 @@ def main():
     finals, totals = full_analysis.rankings()
     full_analysis.print_rankings(finals,"Final Performance",50)
     full_analysis.print_rankings(totals,"Total Performance",50)
-    full_analysis.performance_statistics(config,totals,25)
+    full_analysis.performance_statistics(config,totals,100) # must not exceed experiment notal
     full_analysis.hist_ranked()
     # top_finals=dict(itertools.islice(finals.items(),20))
     # top_totals=dict(itertools.islice(totals.items(),20))
@@ -79,6 +80,11 @@ def main():
     # #Determine distance metrics across states for different samples
     # dist = DistanceAnalysis(config,save,show)
     # dist.all_dists(config,MATs)
+
+    ### Meta Analysis ###
+    meta = MetaAnalysis(config,save,show)
+    meta.show_all(config,list(totals)[0])
+
 
 if __name__ == "__main__":
     main()

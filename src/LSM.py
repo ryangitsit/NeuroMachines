@@ -1,7 +1,6 @@
 #%%
 import numpy as np
 from brian2 import *
-import matplotlib.pyplot as plt
 import tables
 import os
 from sklearn.linear_model import LogisticRegression
@@ -9,8 +8,8 @@ import string
 from processing import *
 from reservoirs import reservoir
 from poisson_generator import gen_poisson_pattern,create_jitter
-from plotting import performance, raster_plot, raster_save
-import pickle
+from plotting import performance
+import random
 
 from collections import Counter
 
@@ -270,6 +269,7 @@ class LiquidState():
             np.save(f, W, allow_pickle=True)
 
         mats = []
+        count=0
         for pat,v in dataset.items():
             for rep,replica in enumerate(v):
                 item = f'pat{pat}_rep{rep}'
@@ -279,29 +279,65 @@ class LiquidState():
                 #################
                 #################
                 example = inputs.dataset[pat][rep]
-                timed = inputs.times[example]*ms
+                timed = inputs.times[example]*ms #+ count*config.length*ms
                 print("  Spike generator")
                 SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
 
                 SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
                 SP.connect(p=config.input_sparsity)
+                # SP.w = 2*[-1,1][random.randrange(2)]
                 spikemon = SpikeMonitor(G)
                 nets.add(SGG, SP, spikemon)
                 print("  Simulation")
                 nets.run((config.length)*ms)
                 indices = np.array(spikemon.i)
-                times = np.array(spikemon.t/ms)
+                times = np.array(spikemon.t/ms) #-count*config.length
                 print("  Encoding")
                 mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
                 nets.remove(SGG,SP,spikemon)
                 nets.restore()
                 print("  Restoring")
+                #count+=1
                 #################
                 #################
                 
                 if rep == 0:
                     print("Saving Spikes")
                     save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq)
+
+        # TIMED = [inputs.times[inputs.dataset[config.classes[pat]][rep]] + (pat*config.replicas+rep)*config.length for pat in range(config.patterns) for rep in range(config.replicas)]
+        # INDICED = [inputs.units[inputs.dataset[config.classes[pat]][rep]] for pat in range(config.patterns) for rep in range(config.replicas)]
+
+        # TIMED = np.concatenate(TIMED)*ms
+        # INDICED = np.concatenate(INDICED)
+        # SGG = SpikeGeneratorGroup(inputs.channels, INDICED, TIMED, dt=config.DT*us)
+
+        # SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
+        # SP.connect(p=config.input_sparsity)
+        # #SP.w = 2*[-1,1][random.randrange(2)]
+        # spikemon = SpikeMonitor(G)
+        # nets.add(SGG, SP, spikemon)
+        # print("  Simulation")
+        # nets.run((config.length*config.patterns*config.length)*ms)
+        # indices = np.array(spikemon.i)
+        # times = np.array(spikemon.t/ms) #-count*config.length
+
+        # count=0
+        # for pat,v in dataset.items():
+        #     for rep,replica in enumerate(v):
+        #         start = config.length*count
+        #         stop = config.length*count + config.length
+        #         time = times[start:stop]*ms
+        #         indice = indices[start:stop]
+        #         item = f'pat{pat}_rep{rep}'
+        #         print(f" --- Recording pattern {pat}, replica {rep} ---")
+        #         loc_liq = f'{config.dir}/liquid'
+        #         item_liq = f'{config.full_loc}_{item}'
+        #         mats.append(one_hot(config.neurons,config.length,np.array(indice)[:],time[:]))
+        #         count+=1
+        #         if rep == 0:
+        #             print("Saving Spikes")
+        #             save_spikes(config.neurons,inputs.length,time,indice,loc_liq,item_liq)
 
         storage_mats = np.array(mats)
         # print(storage_mats)

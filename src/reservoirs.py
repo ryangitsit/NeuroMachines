@@ -1,5 +1,6 @@
 from brian2 import *
 from smallworld import get_smallworld_graph
+import random
 
 
 
@@ -147,7 +148,7 @@ def reservoir(config):
         W  = S.w
 
     else:
-        S.w = W = np.random.rand(len(S.w))
+        S.w = W = np.random.rand(len(S.w)) #*2*[-1,1][random.randrange(2)]
         G.ref = config.refractory*ms
         S.delay = config.delay*ms
 

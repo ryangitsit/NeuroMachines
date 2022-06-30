@@ -29,7 +29,7 @@ ECHO OFF
 @REM     )
 @REM )
 
-FOR %%i IN (.2,.3,.4,.5) DO (
+FOR %%i IN (.1,.3,.4,.5) DO (
     FOR %%z IN (Maass,STSP,STDP,LSTP) DO (
         FOR %%y IN (0,3) DO (
             FOR %%x IN (0,1.5) DO (

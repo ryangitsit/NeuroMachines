@@ -9,6 +9,11 @@ from plotting import raster_run_input, raster_save
 ##################### Spike Processing Functions #######################
 
 def spks_to_txt(N,indices,times,prec,name):
+    """
+    Convert Brain spikes to txt file
+     - Each line is a neuron indexe
+     - Firing times are recorded at at their appropriate neuron row
+    """
     with open(f'{name}.txt', 'w') as f:
         for row in range(N):
             for i in range(len(indices)):
@@ -23,13 +28,14 @@ def spks_to_txt(N,indices,times,prec,name):
 
 
 def txt_to_spks(file):
+    """"
+    Convert txt file back to Brian style spikes
+     - Two parallel arrays of spike times and associated neuron indices
+    """
     mat = []
     with open(file) as f:
         for line in f:
-            # print(line)
             arr = line.split(' ')
-            #print(arr[0])
-            # print(array(arr)[0])
             mat.append(np.array(arr))
     dat = []
     indi = []
@@ -48,114 +54,21 @@ def txt_to_spks(file):
 
 
 
-# def one_hot(N,length,indices,times):
-#     """"
-#     One-Hot Encode Spikes into a Matrix
-#     - Create matrix of time slices per neuron index
-#     - Time slices of (1ms) each
-#     - Check for each neuron if spike occurs within that dt
-#     - If so, add 1 for that index at that dt
-#     - Multiple spikes per index/dt possible
-#     """
-#     # slices = np.int(np.max(times))
-#     slices=length
-#     hot_matrix = np.zeros((N,slices))
-#     for slice in range(0,slices):
-#         for t in range(len(times)):
-#             if times[t] > slice and times[t] <= slice+1 and times[t] < length:
-#                 hot_matrix[indices[t]][slice] += 1
-#     return hot_matrix
-
 def one_hot(N,length,indices,times):
+    """"
+    One hot encode spiking data into NEURONS x TIME 
+     - Time columns (rows?) are divided into 1ms steps
+        - If spike falls into this range for a given neuron, that neuron
+          index at that time index is incremented by 1
+     - Not actually one hot, but rather binned, with multiple spikes
+       allowed per index
+    """
     hot_matrix = np.zeros((N,length))
     for t in range(len(times)):
         if times[t] < length:
             hot_matrix[indices[t],int(np.floor(times[t]))] +=1
     return hot_matrix
 
-
-def one_hot_sets(configs,classes,liquids):
-    """
-    - Takes spikes either directly from liquids or from saved directories
-    - Returns a matrix of one-hot-encoded spikes for 1ms times steps
-    - Note that all patterns and replicas are concatenated in the form:
-        - A0, B0, C0, A1, B1, C1, A2, B2, C2,...
-    """
-
-    dic = configs
-    for key, value in dic.items():
-        str = key
-        globals()[str] = value
-
-    IND = []
-    TIM = []
-    mats = []
-    labels=[]
-
-    if flow == False:
-        for rep in range(replicas):
-            for pat in classes:
-
-                dat,indices,times = txt_to_spks(f"results/{location}/liquid/spikes/"+full_loc+f"_pat{pat}_rep{rep}.txt")
-
-                IND.append(np.array(indices)[:])
-                TIM.append(times[:]/1000)
-                # if plotting:
-                #     print("plotting")
-                #     raster_plot(times[:]/1000,np.array(indices)[:])
-                mats.append(one_hot(neurons,length,np.array(indices)[:],times[:]))
-                #print(one_hot(135,array(indices)[:],times[:]).shape)
-                labels.append(pat)
-
-    elif flow == True:
-        for rep in range(replicas):
-            for pattern in classes:
-
-                indices_ = np.array(liquids[pattern][rep][:,0])
-                times = np.array(liquids[pattern][rep][:,1])
-
-                indices = indices_.astype(int)
-
-                IND.append(np.array(indices)[:])
-                TIM.append(times[:])
-                # if plotting:
-                #     raster_plot(times[:]*ms,array(indices)[:])
-                mats.append(one_hot(neurons,length,np.array(indices)[:],times[:]))
-                #print(one_hot(135,array(indices)[:],times[:]).shape)
-                labels.append(pattern)
-
-    for t in range(len(TIM)):
-        TIM[t] += length*t
-
-    multi_indices = np.concatenate(IND)
-    multi_times = np.concatenate(TIM)
-    print(f'''
-    Spike times and indices imported
-    Folder: {location}
-    Patterns: {classes}
-    Replicas: {replicas}
-    Length: {len(multi_times)}
-    ''')
-
-    return multi_indices, multi_times, mats, labels
-
-
-def group(mats,labels,time):
-    """
-    Grouping
-    - group one-hot encoded sets for each replica by class label
-    - store in a dictionay
-    """
-    classes = set(labels)
-    groups = {}
-    for c in classes:
-        groups[c] = []
-
-    for i, lab in enumerate(labels):
-        for group in classes:
-            if lab == group:
-                groups[group].append(mats[i][time])
-    return groups
 
 
 
@@ -239,11 +152,100 @@ def billboard(word):
 
 
 
-
-
 def unit_dict(dict,key):
     unit_dict = {}
     for i, (k,v) in enumerate(dict.items()):
         if k == key:
             unit_dict[k] = v
     return unit_dict
+
+
+
+
+
+
+###
+
+# Legacy
+# def one_hot_sets(configs,classes,liquids):
+#     """
+#     - Takes spikes either directly from liquids or from saved directories
+#     - Returns a matrix of one-hot-encoded spikes for 1ms times steps
+#     - Note that all patterns and replicas are concatenated in the form:
+#         - A0, B0, C0, A1, B1, C1, A2, B2, C2,...
+#     """
+
+#     dic = configs
+#     for key, value in dic.items():
+#         str = key
+#         globals()[str] = value
+
+#     IND = []
+#     TIM = []
+#     mats = []
+#     labels=[]
+
+#     if flow == False:
+#         for rep in range(replicas):
+#             for pat in classes:
+
+#                 dat,indices,times = txt_to_spks(f"results/{location}/liquid/spikes/"+full_loc+f"_pat{pat}_rep{rep}.txt")
+
+#                 IND.append(np.array(indices)[:])
+#                 TIM.append(times[:]/1000)
+#                 # if plotting:
+#                 #     print("plotting")
+#                 #     raster_plot(times[:]/1000,np.array(indices)[:])
+#                 mats.append(one_hot(neurons,length,np.array(indices)[:],times[:]))
+#                 #print(one_hot(135,array(indices)[:],times[:]).shape)
+#                 labels.append(pat)
+
+#     elif flow == True:
+#         for rep in range(replicas):
+#             for pattern in classes:
+
+#                 indices_ = np.array(liquids[pattern][rep][:,0])
+#                 times = np.array(liquids[pattern][rep][:,1])
+
+#                 indices = indices_.astype(int)
+
+#                 IND.append(np.array(indices)[:])
+#                 TIM.append(times[:])
+#                 # if plotting:
+#                 #     raster_plot(times[:]*ms,array(indices)[:])
+#                 mats.append(one_hot(neurons,length,np.array(indices)[:],times[:]))
+#                 #print(one_hot(135,array(indices)[:],times[:]).shape)
+#                 labels.append(pattern)
+
+#     for t in range(len(TIM)):
+#         TIM[t] += length*t
+
+#     multi_indices = np.concatenate(IND)
+#     multi_times = np.concatenate(TIM)
+#     print(f'''
+#     Spike times and indices imported
+#     Folder: {location}
+#     Patterns: {classes}
+#     Replicas: {replicas}
+#     Length: {len(multi_times)}
+#     ''')
+
+#     return multi_indices, multi_times, mats, labels
+
+
+# def group(mats,labels,time):
+#     """
+#     Grouping
+#     - group one-hot encoded sets for each replica by class label
+#     - store in a dictionay
+#     """
+#     classes = set(labels)
+#     groups = {}
+#     for c in classes:
+#         groups[c] = []
+
+#     for i, lab in enumerate(labels):
+#         for group in classes:
+#             if lab == group:
+#                 groups[group].append(mats[i][time])
+#     return groups

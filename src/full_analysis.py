@@ -204,7 +204,7 @@ class PerformanceAnalysis():
         plt.tight_layout()
 
         if self.save==True:
-            path = f'results/{self.sweep}/analysis/stats.png'
+            path = f'results/{self.sweep}/analysis/stats_{self.lim}.png'
             plt.savefig(path)
         if self.show==True:
             plt.show()
@@ -619,7 +619,7 @@ class MetaAnalysis():
         self.show = show
         self.directory = f'results/{config.dir}/'
 
-    def show_all(self,key):
+    def show_all(self,config,key):
         """"
         Show relevant plots for specific experiment
         """
@@ -627,8 +627,8 @@ class MetaAnalysis():
         plot.show()
         plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
         plot.show()
-        plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
-        plot.show()
+        # plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
+        # plot.show()
 
     def dict_compare(self,config,dict1,dict2):
         """
