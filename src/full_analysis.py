@@ -134,7 +134,8 @@ class PerformanceAnalysis():
             "beta":[],
             "refractory":[],
             "delay":[],
-            "x_atory":[]
+            "x_atory":[],
+            "feed":[]
             }
         for k in list(dict)[:lim]:
             directory = f'results/{config.dir}/configs'
@@ -167,10 +168,10 @@ class PerformanceAnalysis():
             occ_combos = {}
             for u in unique_combos:
                 occ_combos[u] = sets.count(u)
-            # print(param_combo)
-            # for k,v in occ_combos.items():
-            #     if str(k[0]) != 'None' and str(k[1]) != 'None':
-            #         print("   ",k," - ",v)
+            print(param_combo)
+            for k,v in occ_combos.items():
+                if str(k[0]) != 'None' and str(k[1]) != 'None':
+                    print("   ",k," - ",v)
             self.combos[param_combo] = occ_combos
 
     def hist_ranked(self):
@@ -219,7 +220,7 @@ class PerformanceAnalysis():
             plt.close()
 
 
-    def top_plot(self):
+    def top_plot(self,size):
         """
         Plotting Top 5 Performers and Their Replicas
         - Create a subplot grid
@@ -229,9 +230,9 @@ class PerformanceAnalysis():
                 - Pull the appropriate spikes
                 - Raster plot them into the subplot grid
         """
-        fig, axs = plt.subplots(5, 3,figsize=(24,14))
+        fig, axs = plt.subplots(size, 3,figsize=(24,14))
         plt.title("Title")
-        top_5 = list(self.final_perf_ranking)[:5]
+        top_5 = list(self.final_perf_ranking)[:size]
         print(self.classes[:self.patterns])
         for i,pattern in enumerate(self.classes[:self.patterns]):
             suffix = "_pat"+pattern+"_rep0.txt"
@@ -266,7 +267,7 @@ class StateAnalysis():
     def print_config(self,config):
         print(config.__dict__)
 
-    def analysis_loop(self,config):
+    def analysis_loop(self,config,new_pcs):
         """
         Gather States and PCs
          - Iterate over all saved one-hot-encoded matrices
@@ -293,34 +294,39 @@ class StateAnalysis():
             print(f"{exp} - experiment: {exp_name}")
 
             mat = np.load(file, allow_pickle=True)
-
-            # Across all
-            pcs_times = []
-            for t in range(config.length):
-                step = 0
-                pc_pats = []
-                norms = []
-                for p,pattern in enumerate(config.classes):
-                    # norms = []
-                    for r in range(config.replicas):
-                        slice = mat[step][:,t]
-                        norm = np.array(slice) - np.mean(slice)
-                        norms.append(norm)
-                        step+=1
-                norms = np.array(norms)
-                pc_obj = PCA(n_components=3)
-                pc_slice = pc_obj.fit_transform(norms)
-                #print(pc_slice)
-                pcs_times.append(np.array(pc_slice))
-            pcs_times = np.array(pcs_times)
             self.MATs[exp_name] = mat
-            self.PCs[exp_name] = pcs_times
+            # Across all
+            if new_pcs == True:
+                pcs_times = []
+                for t in range(config.length):
+                    step = 0
+                    pc_pats = []
+                    norms = []
+                    for p,pattern in enumerate(config.classes):
+                        # norms = []
+                        for r in range(config.replicas):
+                            slice = mat[step][:,t]
+                            norm = np.array(slice) - np.mean(slice)
+                            norms.append(norm)
+                            step+=1
+                    norms = np.array(norms)
+                    pc_obj = PCA(n_components=3)
+                    pc_slice = pc_obj.fit_transform(norms)
+                    #print(pc_slice)
+                    pcs_times.append(np.array(pc_slice))
+                pcs_times = np.array(pcs_times)
+                self.PCs[exp_name] = pcs_times
 
-        
-        dict = self.PCs
-        path = f'results/{config.dir}/analysis/'
-        name = 'all_pcs'
-        write_dict(dict,path,name)
+                dict = self.PCs
+                path = f'results/{config.dir}/analysis/'
+                name = 'all_pcs'
+                write_dict(dict,path,name)
+
+            else:
+                dirName = f'results/{config.dir}/analysis/'
+                item = 'all_pcs'
+                PCs = read_json(dirName,item)
+                self.PCs = PCs
 
         # dict = self.MATs
         # name = 'all_mats'

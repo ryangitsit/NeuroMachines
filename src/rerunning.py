@@ -10,15 +10,8 @@ def main():
 
     ### INPUT ###
 
-    inputs = Input(config)
-    if config.input_name == "Heidelberg":
-        names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','NULL','EINS','ZWEI','DREI','VIER','FUNF','SECHS','SEBEN','ACHT','NEUN','ZEHN']
-    elif config.input_name == "Poisson":
-        names = string.ascii_letters[26:52]
-    config.classes=names[:config.patterns]
-    print(config.classes)
-    
-    dataset = inputs.read_data(config)
+    inputs = Input(config)    
+    config, dataset = inputs.read_data(config)
     print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
     for k,v in dataset.items():
         print(f"  Pattern {k} at indices {v}")

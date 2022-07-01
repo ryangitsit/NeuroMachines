@@ -66,6 +66,7 @@ class Input:
         '''
         self.file = config.input_file
         self.input_name = config.input_name
+        self.output_show = config.output_show
 
     def __str__(self):
         return f"Dataset: \n{self.__dict__}"
@@ -230,7 +231,7 @@ class Input:
                 input_times = self.times[rep]
                 loc = f'{location}/inputs'
                 item = f'pat{k}_rep{i}'
-                save_spikes(self.channels,self.length,input_times*1000,input_units,loc,item)
+                save_spikes(self.channels,self.length,input_times*1000,input_units,loc,item,self.output_show)
 
 # inputs = Input(config)
 # dataset = inputs.read_data(config)
@@ -320,7 +321,7 @@ class LiquidState():
                     
                     if rep == 0:
                         print("  Saving Spikes")
-                        save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq)
+                        save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq,config.output_show)
 
         elif config.feed == 'continuous':
             print("Continuous input")
@@ -359,7 +360,7 @@ class LiquidState():
                     count+=1
                     if rep == 0:
                         print("  Saving Spikes")
-                        save_spikes(config.neurons,inputs.length,time,indice,loc_liq,item_liq)
+                        save_spikes(config.neurons,inputs.length,time,indice,loc_liq,item_liq,config.output_show)
 
         storage_mats = np.array(mats)
         # print(storage_mats)
@@ -418,8 +419,8 @@ class ReadoutMap():
 
         ratio = self.split/(config.replicas*config.patterns)
         pat_step = int(config.length*config.replicas)
-        train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(config.replicas)]
-        test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(config.replicas)]
+        train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(config.patterns)]
+        test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(config.patterns)]
 
         if config.chunk == 1:
             self.training = np.concatenate([self.full_train[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
@@ -453,8 +454,8 @@ class ReadoutMap():
             
             ratio = self.split/(config.replicas*config.patterns)
             pat_step = int(config.length*config.replicas/chunk_size)
-            train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(config.replicas)]
-            test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(config.replicas)]
+            train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(config.patterns)]
+            test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(config.patterns)]
 
             self.training = np.concatenate([all_chunks[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
             self.target = np.concatenate([chunk_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])

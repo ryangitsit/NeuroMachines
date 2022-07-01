@@ -122,7 +122,7 @@ def write_dict(dict,path,name):
     f.write(js)
     f.close()
 
-def save_spikes(N,T,times,indices,location,item):
+def save_spikes(N,T,times,indices,location,item,show):
     #spiking
     dirName = f"results/{location}/spikes"
     try:
@@ -141,7 +141,7 @@ def save_spikes(N,T,times,indices,location,item):
     #     raster_run_input(times,indices,dirName2,item)
     # else:
     # if item[-1] == '0' or len(item) < 20:
-    raster_save(times,indices,dirName2,item)
+    raster_save(times,indices,dirName2,item,show)
 
 
 def billboard(word):

@@ -107,7 +107,7 @@ def reservoir(config):
     # here res_sparsity defines the lambda parameter
     elif config.topology=="geo":
         #G,S = gen_geometric(G,S,config.neurons,config.dims,lam=None,dist_coeff=config.res_sparsity)
-        G,S = gen_geometric(G,S,config.neurons,config.dims,lam=config.lamb,dist_coeff=config.res_sparsity)
+        G,S = gen_geometric(G,S,config.neurons,config.dims,config.lamb,dist_coeff=config.res_sparsity)
   
     # here res_sparsity defines the k/2 parameter
     elif config.topology=="smw":

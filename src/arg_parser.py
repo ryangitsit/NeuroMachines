@@ -10,6 +10,8 @@ def setup_argument_parser():
     parser.add_argument("--input_file", help = " ", type = str, default = "shd_train.h5")
     parser.add_argument("--classes", help = " ", type = str, default = ["A","B","C"])
     parser.add_argument("--feed", help = " ", choices = ['reset','continuous'], type = str, default = "reset")
+    parser.add_argument("--ID", help = " ", type = int, default = None)
+
 
     # input
     parser.add_argument("--patterns", help = " ", type = int, default = 3)
@@ -26,23 +28,23 @@ def setup_argument_parser():
     # parser.add_argument("--plots", help = " ", default = True)
     # parser.add_argument("--flow", help = " ", type = bool, default = False)
     parser.add_argument("--full_loc", help = " ", type = str, default=None)
-    parser.add_argument("--chunk", help = " ", type = int, default = 10)
+    parser.add_argument("--chunk", help = "Defines chunking size for training/testing of time slices", type = int, default = 20)
 
     # liquids
     parser.add_argument("--learning", help = " ", choices = ['Maass', 'STSP', 'STDP','LSTP'], type = str, default = "STSP")
     parser.add_argument("--topology", help = " ", choices = ['rnd', 'geo', 'smw'], type = str, default = "rnd")
-    parser.add_argument("--input_sparsity", help = "Sparsity of connection from input to reservoir" type = float, default = 0.3)
+    parser.add_argument("--input_sparsity", help = "Sparsity of connection from input to reservoir", type = float, default = 0.3)
     parser.add_argument("--res_sparsity", help = "Interntal reservoir sparsity", type = float, default = .2)
     parser.add_argument("--STSP_U", help = "U value from the Mongillo equations", type = float, default = 0.6)
     parser.add_argument("--x_atory", help = "Toggle ex/inhibatory behaviour", type = bool, default = False)
-    parser.add_argument("--lamb", help = "For geometric only", type = int, default = 2)
+    parser.add_argument("--lamb", help = "For geometric only", type = int, default = None)
 
     
     # Each corresponds to a specific topology and will set top for the run
     # Do not select more than one
-    parser.add_argument("--rndp", help = " ", type = float, default =None)   # random topology
-    parser.add_argument('--dims', nargs='*', help=" ", type=int, default=None)  # geometric topology
-    parser.add_argument("--beta", help = " ", type = float, default = None)     # small-world topology
+    parser.add_argument("--rndp", help = "same as res_sparsity", type = float, default =None)   # random topology
+    parser.add_argument('--dims', nargs='*', help="takes 3 values separated by a space that must multiply to number of neurons", type=int, default=None)  # geometric topology
+    parser.add_argument("--beta", help = "will increase chance of reconnection from pure small-world", type = float, default = None)     # small-world topology
 
 
     parser.add_argument("--neurons", help = " ", type = int, default = 64)
@@ -62,7 +64,7 @@ def setup_argument_parser():
     # parser.add_argument("--tests", help = " ", type = int, default = 1)
     parser.add_argument("--storage_output", help = " ", type = bool, default = True)
     parser.add_argument("--plots_output", help = " ", type = bool, default = True)
-    parser.add_argument("--output_show", help = " ", type = bool, default = False)
+    parser.add_argument("--output_show", help = "set to True to show plots during run", type = bool, default = False)
 
     return parser.parse_args()
     

@@ -16,7 +16,7 @@ def raster_plot(time, index):
     plt.ylabel('Neuron index')
     plt.show()
 
-def raster_save(time,index,dirName,item):
+def raster_save(time,index,dirName,item,show):
     plt.figure(figsize=(22,12))
     # if len(time) > 1000:
     #     plt.plot(time, index, '.k')
@@ -26,7 +26,10 @@ def raster_save(time,index,dirName,item):
     plt.ylabel('Neuron index',fontsize=18)
     plt.title(f'Raster Plot {item}',fontsize=20)
     plt.savefig(f'{dirName}/{item}.png')
-    plt.close()     
+    if show == True:
+        plt.show()
+    else:
+        plt.close() 
 
 def raster_run_input(time,index,dirName,item):
     plt.figure(figsize=(8, 8))
