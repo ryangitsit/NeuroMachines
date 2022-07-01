@@ -5,7 +5,8 @@ import random
 
 
 def reservoir(config):
-
+    seed(10)
+    np.random.seed(10)
     neuron_spacing = 50*umetre
     width = config.neurons/4.0*neuron_spacing
     ref=float(config.refractory)*ms
@@ -157,6 +158,8 @@ def reservoir(config):
 
 
 def gen_geometric(G,S,neurons,dims,lamb,dist_coeff):
+    seed(10)
+    np.random.seed(10)
     """
     Parameters to vary:
     - dimensions
@@ -183,6 +186,8 @@ def gen_geometric(G,S,neurons,dims,lamb,dist_coeff):
     return G, S
 
 def gen_small_world(S,neurons,beta,res_sparsity):
+    seed(10)
+    np.random.seed(10)
     """
     Parameters to vary:
     - Beta

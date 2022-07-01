@@ -16,6 +16,7 @@ from os.path import exists
 
 from processing import txt_to_spks,write_dict,read_json
 
+#%%
 """
 Plan:
 
@@ -158,12 +159,12 @@ class PerformanceAnalysis():
                 occ[u] = v.count(u)
             print(f"{k} => {occ}")
         
-        hyper_combos = list(itertools.combinations(list(hyper_parameters),2))
+        hyper_combos = list(itertools.combinations(list(hyper_parameters),3))
         self.combos = {}
         for param_combo in hyper_combos:
             sets = []
             for i in range(lim):
-                sets.append((hyper_parameters[param_combo[0]][i],hyper_parameters[param_combo[1]][i]))
+                sets.append((hyper_parameters[param_combo[0]][i],hyper_parameters[param_combo[1]][i],hyper_parameters[param_combo[2]][i]))
             unique_combos = set(sets)
             occ_combos = {}
             for u in unique_combos:
@@ -191,7 +192,7 @@ class PerformanceAnalysis():
                     if k[1] == 'geo':
                         GEO[i]+=v*100/self.lim
                     if k[1] == 'rnd':
-                        RND[i]+=v*100/self.lim
+                        RND[i]+=v*300/self.lim
                     if k[1] == 'smw':
                         SMW[i]+=v*100/self.lim
 
@@ -219,6 +220,118 @@ class PerformanceAnalysis():
         else:
             plt.close()
 
+    def hist_alt(self):
+        """
+        Plot histogram for occurnces of learing-topology pairs in 
+        defined top performers.
+        """
+        labels = list(set(self.hyperparams["learning"]))
+
+
+        dict = self.combos[('learning', 'x_atory', 'feed')]
+
+        plain=[0,0,0,0]
+        xt=[0,0,0,0]
+        cont=[0,0,0,0]
+        xcont=[0,0,0,0]
+        for i,l in enumerate(labels):
+            for k,v in dict.items():
+                if k[0] == l:
+                    if k == (l,False,'reset'):
+                        plain[i]+=v*100/self.lim
+                    if k == (l,True,'reset'):
+                        xt[i]+=v*100/self.lim
+                    if k == (l,False,'continuous'):
+                        cont[i]+=v*100/self.lim
+                    if k == (l,True,'continuous'):
+                        xcont[i]+=v*100/self.lim
+
+        x = np.arange(len(labels)) 
+        width = 0.18  
+        plt.figure(figsize=(7,7))
+        plt.style.use('seaborn-muted')
+
+        rects1 = plt.bar(x - 1.5*width-.03, plain, width, label='plain')
+        rects2 = plt.bar(x - .5*width-.01, xt, width, label='x_atory')
+        rects3 = plt.bar(x + .5*width+.01, cont, width, label='continous')
+        rects3 = plt.bar(x + 1.5*width+.03, xcont, width, label='x and continuous')
+
+        plt.ylabel('Percent Present',fontsize=18)
+        plt.title(f'Configurations in top {self.lim} Performers',fontsize=22)
+        plt.xticks(x, labels,fontsize=18)
+        plt.legend(fontsize=20) # using a size in points
+        plt.legend(fontsize="x-large") # using a named size
+        plt.tight_layout()
+
+        if self.save==True:
+            path = f'results/{self.sweep}/analysis/stats_xcon_{self.lim}.png'
+            plt.savefig(path)
+        if self.show==True:
+            plt.show()
+        else:
+            plt.close()
+
+    def hist_alt_top(self):
+        """
+        Plot histogram for occurnces of learing-topology pairs in 
+        defined top performers.
+        """
+        labels = list(set(self.hyperparams["topology"]))
+
+
+        dict = self.combos[('topology', 'x_atory', 'feed')]
+
+        plain=[0,0,0]
+        xt=[0,0,0]
+        cont=[0,0,0]
+        xcont=[0,0,0]
+        for i,l in enumerate(labels):
+            for k,v in dict.items():
+                if k[0] == l:
+                    if l == 'rnd':
+                        if k == (l,False,'reset'):
+                            plain[i]+=v*300/self.lim
+                        if k == (l,True,'reset'):
+                            xt[i]+=v*300/self.lim
+                        if k == (l,False,'continuous'):
+                            cont[i]+=v*300/self.lim
+                        if k == (l,True,'continuous'):
+                            xcont[i]+=v*300/self.lim
+                    else:
+                        if k == (l,False,'reset'):
+                            plain[i]+=v*100/self.lim
+                        if k == (l,True,'reset'):
+                            xt[i]+=v*100/self.lim
+                        if k == (l,False,'continuous'):
+                            cont[i]+=v*100/self.lim
+                        if k == (l,True,'continuous'):
+                            xcont[i]+=v*100/self.lim
+        
+        x = np.arange(len(labels)) 
+        width = 0.18  
+        plt.figure(figsize=(7,7))
+        plt.style.use('seaborn-muted')
+
+        rects1 = plt.bar(x - 1.5*width-.03, plain, width, label='plain')
+        rects2 = plt.bar(x - .5*width-.01, xt, width, label='x_atory')
+        rects3 = plt.bar(x + .5*width+.01, cont, width, label='continous')
+        rects3 = plt.bar(x + 1.5*width+.03, xcont, width, label='x and continuous')
+
+        plt.ylabel('Percent Present',fontsize=18)
+        plt.title(f'Configurations in top {self.lim} Performers',fontsize=22)
+        plt.xticks(x, labels,fontsize=18)
+        plt.legend(fontsize=20) # using a size in points
+        plt.legend(fontsize="x-large") # using a named size
+        plt.tight_layout()
+
+        if self.save==True:
+            path = f'results/{self.sweep}/analysis/stats_xcontop_{self.lim}.png'
+            plt.savefig(path)
+        if self.show==True:
+            plt.show()
+        else:
+            plt.close()
+
 
     def top_plot(self,size):
         """
@@ -230,6 +343,8 @@ class PerformanceAnalysis():
                 - Pull the appropriate spikes
                 - Raster plot them into the subplot grid
         """
+        plt.figure(figsize=(24,14))
+        
         fig, axs = plt.subplots(size, 3,figsize=(24,14))
         plt.title("Title")
         top_5 = list(self.final_perf_ranking)[:size]
@@ -242,15 +357,22 @@ class PerformanceAnalysis():
                     break
                 #print(name+suffix)
                 dat, indices, times = txt_to_spks(prefix+name+suffix)
-                axs[j, i].plot(times, indices, '.k', ms=.7)
-                axs[j, i].set_title(name, size=6)
-        for ax in axs.flat:
-            ax.set(xlabel='time (ms)', ylabel='neuron index')
-        for ax in axs.flat:
-            ax.label_outer()
+                axs[j, i].plot(times, indices, '.k', ms=4/size)
+                if i == 0:
+                    axs[j, i].set_title(name, size=6)
+            axs[size, i].tick_params(
+                axis='x',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                bottom=False,      # ticks along the bottom edge are off
+                top=False,         # ticks along the top edge are off
+                labelbottom=False) # labels along the bottom edge are off
+        # for ax in axs.flat:
+        #     ax.set(xlabel='time (ms)', ylabel='neuron index')
+        # for ax in axs.flat:
+        #     ax.label_outer()
 
         if self.save==True:
-            path = f'results/{self.sweep}/analysis/top_performers.png'
+            path = f'results/{self.sweep}/analysis/top{size}_performers.png'
             plt.savefig(path)
         if self.show==True:
             plt.show()
@@ -258,6 +380,30 @@ class PerformanceAnalysis():
             plt.close()
 
 
+# sweep = "SuperSweep"
+
+# directory = f'results/{sweep}/configs'
+# filename = os.listdir(directory)[1]
+# file = os.path.join(directory, filename)
+# file_to_read = open(file, "rb")
+# config = pickle.load(file_to_read)
+# file_to_read.close()
+# save = False
+# show = True
+
+# full_analysis = PerformanceAnalysis(config,save,show)
+# full_analysis.performance_pull()
+# finals, totals = full_analysis.rankings()
+# # full_analysis.top_plot(30)
+# # full_analysis.performance_statistics(config,totals,100)
+# # full_analysis.hist_alt()
+# # full_analysis.hist_alt_top()
+# dirName = f'results/{config.dir}/analysis/'
+# item = 'all_pcs'
+# PCs = read_json(dirName,item)
+
+
+#%%
 class StateAnalysis():
     def __init__(self,config,save,show):
         self.save = save
@@ -333,80 +479,6 @@ class StateAnalysis():
         # write_dict(dict,path,name)
 
         return self.MATs, self.PCs
-
-    # def analysis_loop(self,config):
-    #     np.seterr(divide='ignore', invalid='ignore')
-    #     experiments = int(len(os.listdir(self.directory))/(config.patterns*config.replicas))
-    #     count = 0
-    #     self.MATs = {}
-    #     self.PCs = {}
-    #     for exp in range(experiments):
-    #         for pat,label in enumerate(config.classes):
-    #             for r in range(config.replicas):
-    #                 filename = os.listdir(self.directory)[count]
-    #                 file = os.path.join(self.directory, filename)
-    #                 if (count) % 9 == 0:
-    #                     a = file
-    #                     b = '_pat'
-    #                     pat_loc = [(i, i+len(b)) for i in range(len(a)) if a[i:i+len(b)] == b]
-    #                     exp_name=file[len(self.directory)+1:pat_loc[0][0]]
-    #                     print(f"{exp}-{count} experiment: {exp_name}")
-
-    #                     mat_path = f'results/{config.dir}/performance/liquids/encoded/mat_{exp_name}.npy'
-    #                     mat = np.load(mat_path, allow_pickle=True)
-
-    #                     # # Across each replica within a pattern
-    #                     # pcs_times = []
-    #                     # for t in range(config.length):
-    #                     #     step = 0
-    #                     #     pc_pats = []
-    #                     #     for p,pattern in enumerate(config.classes):
-    #                     #         norms = []
-    #                     #         for r in range(config.replicas):
-    #                     #             slice = mat[step][:,t]
-    #                     #             norm = np.array(slice) - np.mean(slice)
-    #                     #             norms.append(norm)
-    #                     #             step+=1
-    #                     #         norms = np.array(norms)
-    #                     #         pc_obj = PCA(n_components=3)
-    #                     #         pc_slice = pc_obj.fit_transform(norms)
-    #                     #         pc_pat = pc_slice[:,0]
-    #                     #         pc_pats.append(pc_pat)
-    #                     #     pcs_times.append(np.array(pc_pats))
-    #                     # pcs_times = np.array(pcs_times)
-
-    #                     # Across all
-    #                     pcs_times = []
-    #                     for t in range(config.length):
-    #                         step = 0
-    #                         pc_pats = []
-    #                         norms = []
-    #                         for p,pattern in enumerate(config.classes):
-    #                             # norms = []
-    #                             for r in range(config.replicas):
-    #                                 slice = mat[step][:,t]
-    #                                 norm = np.array(slice) - np.mean(slice)
-    #                                 norms.append(norm)
-    #                                 step+=1
-    #                         norms = np.array(norms)
-    #                         pc_obj = PCA(n_components=3)
-    #                         pc_slice = pc_obj.fit_transform(norms)
-    #                         #print(pc_slice)
-    #                         pcs_times.append(np.array(pc_slice))
-    #                     pcs_times = np.array(pcs_times)
-    #                     self.MATs[exp_name] = mat
-    #                     self.PCs[exp_name] = pcs_times
-
-    #                 #dat,indices,times = txt_to_spks(file)
-    #                 count+=1
-        
-    #     dict = self.PCs
-    #     path = f'results/{config.dir}/analysis/'
-    #     name = 'all_pcs'
-    #     write_dict(dict,path,name)
-
-    #     return self.MATs, self.PCs
-
 
     def full_pc_plot(self,config,key,moment):
         """
@@ -518,13 +590,76 @@ class StateAnalysis():
         if self.show == True:
             plt.show()
         plt.close()
-    
+
+    def pc_polygons(self,config,key,moment):
+        from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+        """
+        """
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        fig.set_figheight(15)
+        fig.set_figwidth(15)
+
+        #markers = ["$A$","$B$","$C$"]
+        markers = ["$ZERO$","$ONE$","$TWO$"]
+        colors = ['r','g','b']
+
+        # for i,position in enumerate(self.PCs[key][moment]):
+        count=0
+        for i,pat in enumerate(config.classes):
+            pat_pos = []
+            for j in range(config.replicas):
+                position = self.PCs[key][moment][count]
+                ax.scatter(position[0],position[1],position[2],marker='.',color=colors[i],s=750,label=config.classes[i])
+                pat_pos.append(position)
+                count+=1
+            verts = [np.array(pat_pos)]
+            # print(verts.shape)
+            ax.add_collection3d(Poly3DCollection(verts, 
+            facecolors=colors[i], linewidths=1, edgecolors=colors[i], alpha=.25))
+
+        plt.xlim(-2.5,2.5)
+        plt.ylim(-2.5,2.5)
+        ax.set_zlim(-2.5,2.5)
+        # plt.legend()
+        ax.set_xlabel('Component 1')
+        ax.set_ylabel('Component 2')
+        ax.set_zlabel('Component 3')
+        plt.title("Positions in PCA Space",fontsize=24)
+        if self.save == True:
+            dirName = f"results/{config.dir}/analysis/pc_polygons/{key}"
+            try:
+                os.makedirs(dirName)    
+            except FileExistsError:
+                pass
+            plt.savefig(f'results/{config.dir}/analysis/pc_polygons/{key}/PC_t={moment}.png')
+        if self.show == True:
+            plt.show()
+        plt.close()
+# save=True
+# show=False
+# state_analysis = StateAnalysis(config,save,show)
+# state_analysis.PCs = PCs
+# for i in range(700):
+#     state_analysis.pc_polygons(config,list(totals)[6],i)
+
+
+#%%
 
 class DistanceAnalysis():
     def __init__(self,config,save,show):
         self.save = save
         self.show = show
+        self.sweep = config.dir
         # self.directory = f'results/{config.dir}/'
+        self.dirName = dirName = f'results/{config.dir}/analysis/distance_measures/'
+        if exists(self.dirName):
+            self.intra = read_json(dirName,"intra")
+            self.intra_mean_dist = read_json(dirName,"intra_mean")
+            self.inter= read_json(dirName,"inter")
+            self.clust = read_json(dirName,"clust")
+            self.diff = read_json(dirName,"diff")
+            self.diff_sum = read_json(dirName,"dif_sum")
 
     def distance_measure(self,config,single):
         """
@@ -691,128 +826,15 @@ class MetaAnalysis():
         #plt.savefig(f"results/{sweep}/performance/rank_compare_{sweep}_{type}.png")
         plt.show()
 
+    def dist_plot(self,totals):
+        ordered_distance = []
+        plt.figure(figsize=(10,10))
+        for k in totals.keys():
+            ordered_distance.append(dist.diff_sum[k])
+        plt.plot(ordered_distance,'.k')
+
     # def control_test(self,second_sweep):
 
-
-# sweep = "hei_large2"
-
-# directory = f'results/{sweep}/configs'
-# filename = os.listdir(directory)[1]
-# file = os.path.join(directory, filename)
-# file_to_read = open(file, "rb")
-# config = pickle.load(file_to_read)
-# file_to_read.close()
-# save = False
-# show = True
-
-# dirName = f'results/{sweep}/analysis/distance_measures/'
-# item = 'dif_sum'
-# diff_sum = read_json(dirName,item)
-# item = 'clust'
-# clust = read_json(dirName,item)
-# clusts = {}
-
-# clustered = 0
-# for k,v in clust.items():
-#     clusts[k] = np.sum(v)
-#     if np.sum(v) >0:
-#         clustered+=1
-# print(clustered)
-# clusts = dict(sorted(clusts.items(), key=lambda item: item[1],reverse=True))
-
-
-# full_analysis = PerformanceAnalysis(config,save,show)
-# full_analysis.performance_pull()
-# finals, totals = full_analysis.rankings()
-# full_analysis.print_rankings(finals,"Final Performance",20)
-# full_analysis.print_rankings(totals,"Total Performance",20)
-
-# meta = MetaAnalysis(config,save,show)
-# I,J =  meta.dict_compare(config,totals,clusts)
-# meta.ranking_comparison_plot(I,J)
-
-# # meta.show_all(list(totals)[0])
-
-# # for k in list(finals)[:10]:
-# #     meta.show_all(k)
-
-# # full_analysis.print_rankings(finals,"Final Performance",336)
-
-# # full_analysis.print_rankings(totals,"Total Performance",336)
-# # # full_analysis.performance_statistics(finals,20)
-# # # # full_analysis.hist_ranked()
-
-# # # top_finals=dict(itertools.islice(finals.items(),8))
-# # # top_totals=dict(itertools.islice(totals.items(),8))
-
-# # # full_analysis.print_rankings(totals,"Final Performance",10)
-
-# # # config.dir = sweep + "_rerun"
-# # # re_analysis = PerformanceAnalysis(config,save,show)
-# # # re_analysis.performance_pull()
-# # # refinals, retotals = re_analysis.rankings()
-# # # # full_analysis.performance_statistics(finals,20)
-# # # # full_analysis.hist_ranked()
-
-# # # # top_finals=dict(itertools.islice(finals.items(),8))
-# # # # top_totals=dict(itertools.islice(totals.items(),8))
-
-# # # re_analysis.print_rankings(retotals,"Final Performance",10)
-
-# # # for i,(k,v) in enumerate(full_analysis.all_finals.items()):
-# # #     print(np.abs(v - re_analysis.all_finals[k]))
-
-# # ### STATES ###
-# # state_analysis = StateAnalysis(config,save,show)
-# # MATs, PCs = state_analysis.analysis_loop()
-
-# # # # key = 'Maass_geo=(randNone_geo[45, 3, 1]_smNone)_N=135_IS=0.17_RS=0.3_ref=3.0_delay=1.5_U=0.6'
-# # # key = 'LSTP_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=0.0_U=0.6'
-
-# # ## Plot all full paths ##
-# # # for i in range(len(PCs)):
-# # #     state_analysis.full_path_plot(list(PCs)[i])
-
-# # ## Plot all PCs for one config ## 
-# # # for t in range(config.length):
-# # #     state_analysis.full_pc_plot(list(totals)[-1],t)
-
-# # # for t in range(config.length):
-# # #     state_analysis.pc_plot(list(PCs)[23],t)
-# #     # state_analysis.pc_plot('Maass_geo=(randNone_geo[9, 5, 3]_smNone)_N=135_IS=0.17_RS=0.1_ref=3.0_delay=1.5_U=0.6',t)
-
-
-
-# # #%%
-
-
-
-# # # from sklearn.cluster import KMeans
-# # # from scipy.spatial import distance
-# # # import warnings
-# # # dist = DistsanceAnalysis(config,MATs,PCs,save,show)
-# # # # single = MATs[list(MATs)[0]]
-# # # # dist.distance_measure(single)v
-# # # dist.all_dists()
-# # # #%%
-# # # ordered_distance = []
-# # # plt.figure(figsize=(10,10))
-# # # for k in totals.keys():
-# # #     ordered_distance.append(dist.diff_sum[k])
-# # # plt.plot(ordered_distance,'.k')
-# # #%%
-
-
-# # ### META ###
-
-# # meta = MetaAnalysis(config,save,show)
-# # # meta.show_all(list(totals)[0])
-
-# # # for k in top_finals.keys():
-# #     # meta.show_all(k)
-
-# # # for k in list(totals)[-30:-10]:
-# # #     meta.show_all(k)
 
 
 

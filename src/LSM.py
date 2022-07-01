@@ -286,6 +286,8 @@ class LiquidState():
             np.save(f, W, allow_pickle=True)
 
         mats = []
+        seed(10)
+        np.random.seed(10)
         if config.feed == 'reset':
             count=0
             for pat,v in dataset.items():
@@ -299,11 +301,13 @@ class LiquidState():
                     example = inputs.dataset[pat][rep]
                     timed = inputs.times[example]*ms #+ count*config.length*ms
                     print("  Spike generator")
-                    SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
 
-                    SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
+                    seed(10)
+                    SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
+                    SP = Synapses(SGG, G,'w:1', on_pre='v+=w', dt=config.DT*us)                    
                     SP.connect(p=config.input_sparsity)
-                    # SP.w = 2*[-1,1][random.randrange(2)]
+                    SP.w = np.random.choice([-2,2], SP.w.shape, p=[0.5, 0.5])
+
                     spikemon = SpikeMonitor(G)
                     nets.add(SGG, SP, spikemon)
                     print("  Simulation")
@@ -329,10 +333,11 @@ class LiquidState():
             INDICED = [inputs.units[inputs.dataset[config.classes[pat]][rep]] for pat in range(config.patterns) for rep in range(config.replicas)]
             TIMED = np.concatenate(TIMED)*ms
             INDICED = np.concatenate(INDICED)
+            seed(10)
             SGG = SpikeGeneratorGroup(inputs.channels, INDICED, TIMED, dt=config.DT*us)
-            SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
+            SP = Synapses(SGG, G,'w:1', on_pre='v+=w', dt=config.DT*us)                    
             SP.connect(p=config.input_sparsity)
-            #SP.w = 2*[-1,1][random.randrange(2)]
+            SP.w = np.random.choice([-2,2], SP.w.shape, p=[0.5, 0.5])
             spikemon = SpikeMonitor(G)
             nets.add(SGG, SP, spikemon)
             print("  Simulation")

@@ -11,7 +11,7 @@ Execution file for full_analysis.py
 
 
 def main():
-    #sweep = "rerun_LSTP"
+    # sweep = "rerun_LSTP"
     # sweep = "hei_large2"
     sweep = "SuperSweep"
     save = True
@@ -42,9 +42,9 @@ def main():
     finals, totals = full_analysis.rankings()
     full_analysis.print_rankings(finals,"Final Performance",100)
     full_analysis.print_rankings(totals,"Total Performance",100)
-    full_analysis.performance_statistics(config,totals,100) # must not exceed experiment total
-    full_analysis.hist_ranked()
-    full_analysis.top_plot(20)
+    # full_analysis.performance_statistics(config,totals,100) # must not exceed experiment total
+    # full_analysis.hist_ranked()
+    # full_analysis.top_plot(30)
 
     # top_finals=dict(itertools.islice(finals.items(),20))
     # top_totals=dict(itertools.islice(totals.items(),20))
@@ -56,20 +56,13 @@ def main():
 
     ### State Analysis ###
     config.old_encoded = False
-    state_analysis = StateAnalysis(config,save,show)
+    # state_analysis = StateAnalysis(config,save,show)
 
     # If analysis has already been run once, use saved results
-    if exists(f'results/{sweep}/analysis/all_pcs.json'):
-        # dirName = f'results/{sweep}/analysis/'
-        # item = 'all_pcs'
-        # PCs = read_json(dirName,item)
-        # state_analysis.PCs = PCs
-        # # item2 = 'all_mats'
-        # # MATs = read_json(dirName,item2)
-        # # state_analysis.MATs = MATs
-        MATs, PCs = state_analysis.analysis_loop(config,True)
-    else:
-        MATs, PCs = state_analysis.analysis_loop(config,False)
+    # if exists(f'results/{sweep}/analysis/all_pcs.json'):
+    #     MATs, PCs = state_analysis.analysis_loop(config,True)
+    # else:
+    #     MATs, PCs = state_analysis.analysis_loop(config,False)
 
     # # Plot all full paths 
     # print(f"Plotting all PC paths...")
@@ -84,8 +77,10 @@ def main():
 
     # ### Distance Analysis ###
     #Determine distance metrics across states for different samples
-    dist = DistanceAnalysis(config,save,show)
-    dist.all_dists(config,MATs)
+    # dist = DistanceAnalysis(config,save,show)
+    # dist.all_dists(config,MATs)
+    # dist.dist_plot(totals)
+    
 
     ### Meta Analysis ###
     # meta = MetaAnalysis(config,save,show)
