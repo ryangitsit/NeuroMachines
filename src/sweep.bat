@@ -3,25 +3,50 @@
 ECHO OFF
 
 
-@REM py -3.8 main.py --just_input True --length 500 --channels 40 --replicas 9 --patterns 3 --input_name "Poisson" --dir poisson_Large
-@REM FOR %%i IN (.2,.3,.4,.5) DO (
-@REM     FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
-@REM         FOR %%y IN (0, 1.5, 3) DO (
-@REM             FOR %%x IN (0.0, 1.5, 3) DO (
-@REM                 FOR %%w IN (100) DO (
-@REM                     FOR %%v IN ( .2,.3,.4,.5) DO (
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir poisson_large --length 500 --input_name "Poisson" --input_sparsity %%i
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir poisson_large --length 500 --input_name "Poisson" --input_sparsity %%i --x_atory True
-@REM                         FOR %%u IN (0.0, .33, .66) DO (
-@REM                             py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
-@REM                             py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw   --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i --x_atory True
-@REM                         )
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 10 10 1 --topology geo  --dir poisson_large  --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 10 5 2 --topology geo  --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 5 5 4 --topology geo  --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 10 10 1 --topology geo  --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i --x_atory True
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 10 5 2 --topology geo  --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i --x_atory True
-@REM                         py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --dims 5 5 4 --topology geo  --dir poisson_large --length 500 --input_name "Poisson" --res_sparsity %%v --input_sparsity %%i --x_atory True
+FOR %%i IN (.2,.3,.4,.5) DO (
+    FOR %%z IN (Maass,STDP,STSP,LSTP) DO (
+        FOR %%y IN (0) DO (
+            FOR %%x IN (1.5) DO (
+                FOR %%w IN (135) DO (
+                    FOR %%v IN (.2,.3,.4,.5) DO (
+                        py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir SuperSweep --length 700 --input_name "Heidelberg" --input_sparsity %%i
+                        py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir SuperSweep --length 700 --input_name "Heidelberg" --input_sparsity %%i --x_atory True
+                        py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir SuperSweep --length 700 --input_name "Heidelberg" --input_sparsity %%i --feed "continuous"
+                        py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --rndp %%v --res_sparsity %%v --topology rnd  --dir SuperSweep --length 700 --input_name "Heidelberg" --input_sparsity %%i --x_atory True --feed "continuous"
+
+                        FOR %%u IN (0.0, .33, .66) DO (
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --feed "continuous"
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --beta %%u --topology smw --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True --feed "continuous"
+                        )
+                        FOR %%l IN (2, 4, 8) DO (
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --lamb %%l --topology geo --dims 15 3 3 --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --lamb %%l --topology geo --dims 15 3 3 --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --lamb %%l --topology geo --dims 15 3 3 --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --feed "continuous"
+                            py -3.8 ./main.py --learning %%z --refractory %%y --delay %%x --neurons %%w --lamb %%l --topology geo --dims 15 3 3 --dir SuperSweep --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --x_atory True --feed "continuous"
+                        )
+                    )
+                )
+            )
+        )
+    )
+)
+
+
+
+@REM FOR %%i IN (.1,.3,.4,.5) DO (
+@REM     FOR %%z IN (Maass,STSP,STDP,LSTP) DO (
+@REM         FOR %%y IN (0,3) DO (
+@REM             FOR %%x IN (0,1.5) DO (
+@REM                 FOR %%w IN (135) DO (
+@REM                     FOR %%v IN (.2,.3,.4,.5) DO (
+@REM                         py -3.8 ./main.py --learning %%z  --neurons %%w --topology rnd --rndp %%v --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3
+@REM                         py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3
+@REM                         py -3.8 ./main.py --learning %%z  --neurons %%w --beta 0.25 --topology smw --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3
+@REM                         py -3.8 ./main.py --learning %%z  --neurons %%w --topology rnd --rndp %%v --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3 --x_atory True
+@REM                         py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3 --x_atory True
+@REM                         py -3.8 ./main.py --learning %%z  --neurons %%w --beta 0.25 --topology smw --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3 --x_atory True
 @REM                     )
 @REM                 )
 @REM             )
@@ -29,24 +54,14 @@ ECHO OFF
 @REM     )
 @REM )
 
-FOR %%i IN (.1,.3,.4,.5) DO (
-    FOR %%z IN (Maass,STSP,STDP,LSTP) DO (
-        FOR %%y IN (0,3) DO (
-            FOR %%x IN (0,1.5) DO (
-                FOR %%w IN (135) DO (
-                    FOR %%v IN (.2,.3,.4,.5) DO (
-                        py -3.8 ./main.py --learning %%z  --neurons %%w --topology rnd --rndp %%v --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3
-                        py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3
-                        py -3.8 ./main.py --learning %%z  --neurons %%w --beta 0.25 --topology smw --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3
-                        py -3.8 ./main.py --learning %%z  --neurons %%w --topology rnd --rndp %%v --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3 --x_atory True
-                        py -3.8 ./main.py --learning %%z  --neurons %%w --dims 15 3 3 --topology geo  --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3 --x_atory True
-                        py -3.8 ./main.py --learning %%z  --neurons %%w --beta 0.25 --topology smw --dir hei_large2_nochunkX --length 700 --input_name "Heidelberg" --res_sparsity %%v --input_sparsity %%i --delay %%x --refractory %%y --replicas 3 --patterns 3 --x_atory True
-                    )
-                )
-            )
-        )
-    )
-)
+
+@REM  Maass_smw=(randNone_geoNone_sm0.25)_N=135_IS=0.5_RS=0.5_ref=0.0_delay=1.5_U=0.6
+@REM FOR %%i IN (1,2,3,4,5,6,7,8,9,10) DO (
+@REM     FOR %%j IN (1,2,3,4,5,6,7,8,9,10) DO (
+@REM         @REM py -3.8 ./main.py --learning Maass --topology smw --neurons 135 --beta 0.25 --res_sparsity 0.5 --input_sparsity 0.5 --refractory 0.0 --delay 1.5 --dir rerun_STSPrnd --STSP_U %%i --rndp %%j
+@REM         python main.py --learning STDP --topology rnd --neurons 135 --replicas 3  --dir fresh_direct --input_name "Heidelberg" --length 700 --rndp 0.2 --res_sparsity 0.4 --input_sparsity 0.2 --ref 0 --delay 1.5 --chunk 20 --feed "reset" --patterns 3 --STSP_U %%i --dims %%j
+@REM     )
+@REM )
 
 @REM py -3.8 main.py --just_input True --length 100 --channels 800 --replicas 27 --patterns 3 --input_name "Heidelberg" --dir hei_rep
 @REM FOR %%i IN (.2,.3,.4) DO (

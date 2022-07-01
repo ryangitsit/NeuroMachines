@@ -99,6 +99,14 @@ class Input:
         - Note that self.dataset is used to refer to which indices carry
           the appropriate samples for a given unique pattern class
         '''
+        if config.input_name == "Heidelberg":
+            names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX',
+                     'SEVEN','EIGHT','NINE','TEN','NULL','EINS','ZWEI',
+                     'DREI','VIER','FUNF','SECHS','SEBEN','ACHT','NEUN',
+                     'ZEHN']
+        elif config.input_name == "Poisson":
+            names = string.ascii_letters[26:52]
+        config.classes=names[:config.patterns]
         dataset = {}
         count = 0
         UNITS = []
@@ -121,7 +129,7 @@ class Input:
         self.length = config.length
         self.classes = config.patterns
         self.dataset = dataset
-        return self.dataset
+        return config, self.dataset
 
     def generate_data(self,config):
         '''
@@ -217,6 +225,7 @@ class Input:
         '''
         for k,v in self.dataset.items():
             for i,rep in enumerate(v):
+                print(f"Saving pattern {k}, replica {i}")
                 input_units = self.units[rep]
                 input_times = self.times[rep]
                 loc = f'{location}/inputs'
@@ -251,9 +260,16 @@ class LiquidState():
     def respond(self,config,inputs,dataset):
 
         if inputs.input_name == 'Poisson':
-            config.DT = 1000
+            config.DT = 10
         elif inputs.input_name =='Heidelberg':
-            config.DT = 1000
+            if config.feed == "continuous" and config.replicas>3:
+                config.DT = 10
+            else:
+                config.DT = 1000
+
+        if config.load_weights == True:
+            print("Loading saved weights...")
+
 
         start_scope()
         G, S, W = reservoir(config)
@@ -303,7 +319,7 @@ class LiquidState():
                     #################
                     
                     if rep == 0:
-                        print("Saving Spikes")
+                        print("  Saving Spikes")
                         save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq)
 
         elif config.feed == 'continuous':
@@ -313,7 +329,6 @@ class LiquidState():
             TIMED = np.concatenate(TIMED)*ms
             INDICED = np.concatenate(INDICED)
             SGG = SpikeGeneratorGroup(inputs.channels, INDICED, TIMED, dt=config.DT*us)
-
             SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)
             SP.connect(p=config.input_sparsity)
             #SP.w = 2*[-1,1][random.randrange(2)]
@@ -336,7 +351,6 @@ class LiquidState():
                     span = np.split(ordered_spikes, split_at)[1]
                     time = np.array(span[:,1]) - count*config.length
                     indice = np.array(span[:,0]).astype(int)
-                    print(indice)
                     item = f'pat{pat}_rep{rep}'
                     print(f" --- Recording pattern {pat}, replica {rep} ---")
                     loc_liq = f'{config.dir}/liquid'
@@ -344,7 +358,7 @@ class LiquidState():
                     mats.append(one_hot(config.neurons,config.length,np.array(indice)[:],time[:]))
                     count+=1
                     if rep == 0:
-                        print("Saving Spikes")
+                        print("  Saving Spikes")
                         save_spikes(config.neurons,inputs.length,time,indice,loc_liq,item_liq)
 
         storage_mats = np.array(mats)
@@ -404,14 +418,17 @@ class ReadoutMap():
 
         ratio = self.split/(config.replicas*config.patterns)
         pat_step = int(config.length*config.replicas)
-        train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(3)]
-        test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(3)]
-        self.training = np.concatenate([self.full_train[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
-        self.target = np.concatenate([self.full_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
-        self.testing = np.concatenate([self.full_train[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
-        self.test_target = np.concatenate([self.full_labels[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
-        self.chunk_size = 1
-        if config.chunk>1:
+        train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(config.replicas)]
+        test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(config.replicas)]
+
+        if config.chunk == 1:
+            self.training = np.concatenate([self.full_train[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
+            self.target = np.concatenate([self.full_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
+            self.testing = np.concatenate([self.full_train[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
+            self.test_target = np.concatenate([self.full_labels[test_rng[i][0]:test_rng[i][1]] for i in range(config.patterns)])
+            self.chunk_size = 1
+
+        elif config.chunk>1:
             ########################################  
                         # CHUNKING #    
             ########################################      
@@ -436,8 +453,8 @@ class ReadoutMap():
             
             ratio = self.split/(config.replicas*config.patterns)
             pat_step = int(config.length*config.replicas/chunk_size)
-            train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(3)]
-            test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(3)]
+            train_rng = [(pat_step*x,int((pat_step*x+pat_step*ratio))) for x in range(config.replicas)]
+            test_rng = [(int((pat_step*x+pat_step*ratio)),int((pat_step*x+pat_step*ratio)+pat_step*(1-ratio))) for x in range(config.replicas)]
 
             self.training = np.concatenate([all_chunks[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
             self.target = np.concatenate([chunk_labels[train_rng[i][0]:train_rng[i][1]] for i in range(config.patterns)])
@@ -452,7 +469,7 @@ class ReadoutMap():
         print("Fitting regression model...")
         logisticRegr = LogisticRegression(max_iter=10000)
         logisticRegr.fit(self.training, self.target)
-
+        print(f"LEN TRAINING/TESTING: {len(self.training)}, {len(self.testing)}") 
         # Make predictions on unseen data for testing range
         print("Making predictions...")
         predictions=[]

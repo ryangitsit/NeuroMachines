@@ -66,6 +66,13 @@ class PerformanceAnalysis():
             self.all_finals[key] = np.mean(accs, axis=0 )[-1:][0]
         return self.all_accs, self.all_avgs, self.all_totals, self.all_finals
 
+    def perfromance_t(self,t):
+        perf_at_t = []
+        for k,v in self.all_avgs.items():
+            perf_at_t.append(v[t])
+        print(f"Average performance and time {t} is {np.mean(perf_at_t)} for {len(self.all_avgs)} experiments.")
+
+
     def accs_plots(self,tops=None):
         """
         Plot certainty trajectorys for all configurations in sweep

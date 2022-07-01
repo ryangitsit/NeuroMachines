@@ -11,7 +11,7 @@ Execution file for full_analysis.py
 
 
 def main():
-    sweep = "hei_large2_nochunkX"
+    sweep = "rerun_STSPrnd"
     # sweep = "hei_large2"
     save = True
     show = False
@@ -37,17 +37,23 @@ def main():
     """
     full_analysis = PerformanceAnalysis(config,save,show)
     full_analysis.performance_pull()
-    full_analysis.accs_plots()
-    finals, totals = full_analysis.rankings()
-    full_analysis.print_rankings(finals,"Final Performance",50)
-    full_analysis.print_rankings(totals,"Total Performance",50)
-    full_analysis.performance_statistics(config,totals,100) # must not exceed experiment notal
-    full_analysis.hist_ranked()
+    for i in range(9):
+        full_analysis.perfromance_t(i)
+
+    # full_analysis.accs_plots()
+    # finals, totals = full_analysis.rankings()
+    # full_analysis.print_rankings(finals,"Final Performance",50)
+    # full_analysis.print_rankings(totals,"Total Performance",50)
+    # full_analysis.performance_statistics(config,totals,50) # must not exceed experiment notal
+    # full_analysis.hist_ranked()
+    # full_analysis.top_plot()
+
     # top_finals=dict(itertools.islice(finals.items(),20))
     # top_totals=dict(itertools.islice(totals.items(),20))
     # full_analysis.accs_plots(top_totals)
     # full_analysis.accs_plots(top_finals)
-    full_analysis.top_plot()
+
+    
 
 
     ### State Analysis ###
@@ -82,8 +88,8 @@ def main():
     # dist.all_dists(config,MATs)
 
     ### Meta Analysis ###
-    meta = MetaAnalysis(config,save,show)
-    meta.show_all(config,list(totals)[0])
+    # meta = MetaAnalysis(config,save,show)
+    # meta.show_all(config,list(totals)[0])
 
 
 if __name__ == "__main__":

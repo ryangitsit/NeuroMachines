@@ -2,6 +2,7 @@ from LSM import *
 from arg_parser import setup_argument_parser
 import os
 import pickle
+from os.path import exists
 
 '''
 ### main.py ###
@@ -31,7 +32,8 @@ def main():
     inputs = Input(config)
 
     # for generating new input only
-    if config.just_input == True:
+    path = f'results/{config.dir}/inputs/spikes/'
+    if not exists(path) or len(os.listdir(path)) < config.replicas*config.patterns:
         if config.input_name == "Heidelberg":
             '''
             - if spoken digit dataset, just input from Heidelberg
@@ -61,44 +63,38 @@ def main():
 
     # If no new input is needed, simply read in existing input
     # Define class names depending on experiment type
-    elif config.just_input == False:
-        if config.input_name == "Heidelberg":
-            names = ['ZERO','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','NULL','EINS','ZWEI','DREI','VIER','FUNF','SECHS','SEBEN','ACHT','NEUN','ZEHN']
-        elif config.input_name == "Poisson":
-            names = string.ascii_letters[26:52]
-        config.classes=names[:config.patterns]
+    # elif config.just_input == False:
+
+    config, dataset = inputs.read_data(config)
+    print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
+    for k,v in dataset.items():
+        print(f"  Pattern {k} at indices {v}")
+    inputs.describe()
 
 
-        dataset = inputs.read_data(config)
-        print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
-        for k,v in dataset.items():
-            print(f"  Pattern {k} at indices {v}")
-        inputs.describe()
+    ### RESERVOIR ###
+    liquids = LiquidState(config)
+    liquids.describe(config)
+    liquids.respond(config,inputs,dataset) # liquid response to all inputs
 
 
-        ### RESERVOIR ###
-        liquids = LiquidState(config)
-        liquids.describe(config)
-        liquids.respond(config,inputs,dataset) # liquid response to all inputs
+    ### OUTPUT ###
+    output = ReadoutMap(config)
+    # matrices, labels = output.heat_up(config) # legacy
+    output.setup(config) # take time slices and label them, also split train/test
+    output.regress(config) # fit regression model for training, and then test on unseen data
 
-
-        ### OUTPUT ###
-        output = ReadoutMap(config)
-        # matrices, labels = output.heat_up(config) # legacy
-        output.setup(config) # take time slices and label them, also split train/test
-        output.regress(config) # fit regression model for training, and then test on unseen data
-
-        # save final config for future use
-        path = f'results/{config.dir}/configs/'
-        name = f'{config.full_loc}.json'
-        try:
-            os.makedirs(path)    
-        except FileExistsError:
-            pass
-        pick = f'{path}config_{name[:-5]}.pickle'
-        filehandler = open(pick, 'wb') 
-        pickle.dump(config, filehandler)
-        filehandler.close()
+    # save final config for future use
+    path = f'results/{config.dir}/configs/'
+    name = f'{config.full_loc}.json'
+    try:
+        os.makedirs(path)    
+    except FileExistsError:
+        pass
+    pick = f'{path}config_{name[:-5]}.pickle'
+    filehandler = open(pick, 'wb') 
+    pickle.dump(config, filehandler)
+    filehandler.close()
 
 if __name__ == "__main__":
     main()

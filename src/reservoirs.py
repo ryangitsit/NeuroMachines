@@ -107,7 +107,7 @@ def reservoir(config):
     # here res_sparsity defines the lambda parameter
     elif config.topology=="geo":
         #G,S = gen_geometric(G,S,config.neurons,config.dims,lam=None,dist_coeff=config.res_sparsity)
-        G,S = gen_geometric(G,S,config.neurons,config.dims,lam=config.res_sparsity,dist_coeff=None)
+        G,S = gen_geometric(G,S,config.neurons,config.dims,lam=config.lamb,dist_coeff=config.res_sparsity)
   
     # here res_sparsity defines the k/2 parameter
     elif config.topology=="smw":
@@ -156,7 +156,7 @@ def reservoir(config):
 
 
 
-def gen_geometric(G,S,neurons,dims,lam,dist_coeff):
+def gen_geometric(G,S,neurons,dims,lamb,dist_coeff):
     """
     Parameters to vary:
     - dimensions
@@ -174,11 +174,12 @@ def gen_geometric(G,S,neurons,dims,lam,dist_coeff):
                 G.z[idx] = z_i*neuron_spacing
 
     # Sweep?
-    #lam = 2*width
-    lam = lam * 10 * width
-    dist_coeff = 0.3
+    lam = lamb*width
+    # lam = lam # * 10 * width
+    #dist_coeff = 0.3
     S.connect(p='dist_coeff*exp(-((x_pre-x_post)**2+(y_pre-y_post)**2+(z_pre-z_post)**2)/(lam**2))')
     print(f"Geomtric topology generated with dimensions {dims}")
+    print(len(S),.3*neurons**2)
     return G, S
 
 def gen_small_world(S,neurons,beta,res_sparsity):
@@ -187,19 +188,18 @@ def gen_small_world(S,neurons,beta,res_sparsity):
     - Beta
     """
     # k_over_2 = 2
-    k_over_2 = int(res_sparsity*10)
+    k_over_2 = int(res_sparsity*neurons/2) #normalize to res_sparsity
+
     sm = get_smallworld_graph(neurons, k_over_2, beta)
     sm_i = []
     sm_j = []
+
 
     for n_i in range(len(sm)):
         for n_j in sm[n_i]:
             sm_i.append(n_i)
             sm_j.append(n_j)
 
-    for ind in range(len(sm_i)):
-        eye = sm_i[ind]
-        jay = sm_j[ind]
-        S.connect(condition='i==eye and j==jay',p=res_sparsity)
+    S.connect(i=sm_i,j=sm_j)
     print(f"Small-world topology generated with beta={beta}")
     return S
