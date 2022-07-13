@@ -30,13 +30,10 @@ def main():
     # initialize input object with config parameters
     inputs = Input(config)
 
-    if config.input_name == "MNIST":
-        config, dataset = inputs.MNIST(config)
-
-    else:
         # for generating new input only
-        path = f'results/{config.dir}/inputs/spikes/'
-        if not exists(path) or len(os.listdir(path)) < config.replicas*config.patterns:
+    path = f'results/{config.dir}/inputs/spikes/'
+    if not exists(path) or len(os.listdir(path)) < config.replicas*config.patterns:
+        if config.input_name != 'MNIST':
             if config.input_name == "Heidelberg":
                 '''
                 - if spoken digit dataset, just input from Heidelberg
@@ -55,7 +52,7 @@ def main():
                 - define indices for the data of each label
                 '''
                 print("Poisson")
-                dataset = inputs.generate_data(config)
+                dataset = inputs.generate_data(config)            
 
             # in all cases, save dataset and print indices of each pattern
             inputs.save_data(config.dir)
@@ -64,15 +61,20 @@ def main():
                 print(f"  Pattern {k} at indices {v}")
             inputs.describe()
 
+        else:
+            config,dataset = inputs.MNIST(config,"save")
         # If no new input is needed, simply read in existing input
         # Define class names depending on experiment type
         # elif config.just_input == False:
 
+    if config.input_name != 'MNIST':
         config, dataset = inputs.read_data(config)
         print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
         for k,v in dataset.items():
             print(f"  Pattern {k} at indices {v}")
         inputs.describe()
+    else:
+        config,dataset = inputs.MNIST(config,"run")
 
 
     ### RESERVOIR ###

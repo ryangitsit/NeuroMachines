@@ -132,7 +132,7 @@ class Input:
         self.dataset = dataset
         return config, self.dataset
 
-    def MNIST(self,config):
+    def MNIST(self,config,todo):
         self.channels = config.channels = 28*28
         self.length = config.length = 350
         from keras.datasets import mnist
@@ -149,6 +149,7 @@ class Input:
         X_test = X_test / 4
         numbers = [0,1,8]
         classes = ["zero", "one", "eight"]
+        config.classes = classes
         dataset = {}
         for i,n in enumerate(numbers):
             dataset[classes[i]] = []
@@ -164,12 +165,15 @@ class Input:
         self.units = []
         self.times = []
         labels = []
+        count = 0
+        self.data = {}
         for n,inds in dataset.items():
+            self.data[n] = []
             for i in inds:
                 channels = 28*28
                 X = X_train[i].reshape(channels)
                 labels.append(y_train[i])
-                P = PoissonGroup(channels, rates=(X/4)*Hz)
+                P = PoissonGroup(channels, rates=(X)*Hz)
                 MP = SpikeMonitor(P)
                 net = Network(P, MP)
                 net.run(self.length*ms)
@@ -180,11 +184,15 @@ class Input:
 
                 print(f"Saving pattern {y_train[i]}, replica {i}")
                 loc = f'{config.dir}/inputs'
-                item = f'pat{y_train[i]}_rep{i}'
+                item = f'pat{n}_rep{i}'
                 self.units.append(spikes_i)
                 self.times.append(spikes_t*1000)
-                save_spikes(self.channels,self.length,spikes_t*1000,spikes_i,loc,item,self.output_show)
-        return config, self.dataset
+                self.data[n].append(count)
+                count+=1
+                if todo == "save":
+                    save_spikes(self.channels,self.length,spikes_t*1000,spikes_i,loc,item,self.output_show)
+        self.dataset = self.data
+        return config, self.data
     
 
     def generate_data(self,config):
