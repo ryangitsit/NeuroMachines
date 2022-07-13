@@ -5,8 +5,9 @@ import random
 
 
 def reservoir(config):
-    seed(10)
-    np.random.seed(10)
+    if config.seeding == "True":
+        seed(10)
+        np.random.seed(10)
     neuron_spacing = 50*umetre
     width = config.neurons/4.0*neuron_spacing
     ref=float(config.refractory)*ms
@@ -29,6 +30,7 @@ def reservoir(config):
 
     # Simple LIF model, v increases by w for all pre-synaptic spikes
     if config.learning=="Maass":
+        print("Maass")
         S = Synapses(G, G, model='w : 1', on_pre='v_post += w', method='linear', dt=config.DT*us)
 
     # Short-Term Synaptic Plasticity
@@ -38,6 +40,7 @@ def reservoir(config):
     # smaller r means depression through the same v update
     # therefore frequent firing results in facilliation then depression
     elif config.learning=="STSP":
+        print("STSP")
         S = Synapses(G, G,
                     '''
                     w : 1
@@ -57,6 +60,7 @@ def reservoir(config):
     # firing traces associated with pre and post synaptic firing
     # weight updates according to association between these firings
     elif config.learning=="STDP":
+        print("STDP")
         S = Synapses(G, G,
                     '''
                     w : 1
@@ -75,6 +79,7 @@ def reservoir(config):
 
     # A straightforward superposition of STDP and STSP
     elif config.learning=="LSTP":
+        print("LSTP")
         S = Synapses(G, G,
                     '''
                     w : 1
@@ -108,16 +113,17 @@ def reservoir(config):
     # here res_sparsity defines the lambda parameter
     elif config.topology=="geo":
         #G,S = gen_geometric(G,S,config.neurons,config.dims,lam=None,dist_coeff=config.res_sparsity)
-        G,S = gen_geometric(G,S,config.neurons,config.dims,config.lamb,dist_coeff=config.res_sparsity)
+        G,S = gen_geometric(G,S,config.neurons,config.dims,config.lamb,config.res_sparsity,config.seeding)
   
     # here res_sparsity defines the k/2 parameter
     elif config.topology=="smw":
-        S = gen_small_world(S,config.neurons,config.beta,config.res_sparsity)
+        S = gen_small_world(S,config.neurons,config.beta,config.res_sparsity,config.seeding)
 
     else:
         print("Error: please select topology type.")
         
-    if config.x_atory == True:
+    if config.x_atory == "True":
+        # print("X_ITATION!")
         n_type = np.random.randint(0,100,config.neurons)
         w_scale = 1
         EE = w_scale * .5 
@@ -149,6 +155,7 @@ def reservoir(config):
         W  = S.w
 
     else:
+        print("Natural weighting")
         S.w = W = np.random.rand(len(S.w)) #*2*[-1,1][random.randrange(2)]
         G.ref = config.refractory*ms
         S.delay = config.delay*ms
@@ -157,9 +164,11 @@ def reservoir(config):
 
 
 
-def gen_geometric(G,S,neurons,dims,lamb,dist_coeff):
-    seed(10)
-    np.random.seed(10)
+def gen_geometric(G,S,neurons,dims,lamb,dist_coeff,seeding):
+    # print("geo")
+    if seeding == "True":
+        seed(10)
+        np.random.seed(10)
     """
     Parameters to vary:
     - dimensions
@@ -176,18 +185,17 @@ def gen_geometric(G,S,neurons,dims,lamb,dist_coeff):
                 G.y[idx] = y_i*neuron_spacing
                 G.z[idx] = z_i*neuron_spacing
 
-    # Sweep?
-    lam = lamb*width
-    # lam = lam # * 10 * width
-    #dist_coeff = 0.3
+    lam = 2*width #lamb*width
+    dist_coeff = dist_coeff*.25  # approximate normalization of sparsity
     S.connect(p='dist_coeff*exp(-((x_pre-x_post)**2+(y_pre-y_post)**2+(z_pre-z_post)**2)/(lam**2))')
     print(f"Geomtric topology generated with dimensions {dims}")
-    print(len(S),.3*neurons**2)
     return G, S
 
-def gen_small_world(S,neurons,beta,res_sparsity):
-    seed(10)
-    np.random.seed(10)
+def gen_small_world(S,neurons,beta,res_sparsity,seeding):
+    # print("smw")
+    if seeding == "True":
+        seed(10)
+        np.random.seed(10)
     """
     Parameters to vary:
     - Beta

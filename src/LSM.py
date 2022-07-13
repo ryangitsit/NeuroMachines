@@ -132,6 +132,61 @@ class Input:
         self.dataset = dataset
         return config, self.dataset
 
+    def MNIST(self,config):
+        self.channels = config.channels = 28*28
+        self.length = config.length = 350
+        from keras.datasets import mnist
+        (X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+        # simplified classification (0 1 and 8)
+        X_train = X_train[(y_train == 1) | (y_train == 0) | (y_train == 8)]
+        y_train = y_train[(y_train == 1) | (y_train == 0) | (y_train == 8)]
+        X_test = X_test[(y_test == 1) | (y_test == 0) | (y_test == 8)]
+        y_test = y_test[(y_test == 1) | (y_test == 0) | (y_test == 8)]
+
+        # pixel intensity to Hz (255 becoms ~63Hz)
+        X_train = X_train / 4 
+        X_test = X_test / 4
+        numbers = [0,1,8]
+        classes = ["zero", "one", "eight"]
+        dataset = {}
+        for i,n in enumerate(numbers):
+            dataset[classes[i]] = []
+            for j,ex in enumerate(y_train):
+                if ex == n:
+                    dataset[classes[i]].append(j)
+                if len(dataset[classes[i]]) == 3:
+                    break
+        self.dataset = dataset
+
+        # Generate spiking data
+        start_scope()
+        self.units = []
+        self.times = []
+        labels = []
+        for n,inds in dataset.items():
+            for i in inds:
+                channels = 28*28
+                X = X_train[i].reshape(channels)
+                labels.append(y_train[i])
+                P = PoissonGroup(channels, rates=(X/4)*Hz)
+                MP = SpikeMonitor(P)
+                net = Network(P, MP)
+                net.run(self.length*ms)
+                spikes_i = np.array(MP.i[:])
+                spikes_t = np.array(MP.t[:])
+                # indices.append(spikes_i)
+                # times.append(spikes_t)
+
+                print(f"Saving pattern {y_train[i]}, replica {i}")
+                loc = f'{config.dir}/inputs'
+                item = f'pat{y_train[i]}_rep{i}'
+                self.units.append(spikes_i)
+                self.times.append(spikes_t*1000)
+                save_spikes(self.channels,self.length,spikes_t*1000,spikes_i,loc,item,self.output_show)
+        return config, self.dataset
+    
+
     def generate_data(self,config):
         '''
         For Poisson Experiments only
@@ -267,8 +322,10 @@ class LiquidState():
                 config.DT = 10
             else:
                 config.DT = 1000
+        elif inputs.input_name =='MNIST':
+            config.DT = 10
 
-        if config.load_weights == True:
+        if config.load_weights == "True":
             print("Loading saved weights...")
 
 
@@ -277,20 +334,24 @@ class LiquidState():
         nets = Network(G, S)
         nets.store()
 
-        dirName = f"results/{config.dir}/weights/"
-        try:
-            os.makedirs(dirName)    
-        except FileExistsError:
-            pass
-        with open(f'results/{config.dir}/weights/{config.full_loc}.npy', 'wb') as f:
-            np.save(f, W, allow_pickle=True)
+        # dirName = f"results/{config.dir}/weights/"
+        # try:
+        #     os.makedirs(dirName)    
+        # except FileExistsError:
+        #     pass
+        # with open(f'results/{config.dir}/weights/{config.full_loc}.npy', 'wb') as f:
+        #     np.save(f, W, allow_pickle=True)
 
         mats = []
-        seed(10)
-        np.random.seed(10)
+        if config.seeding == "True":
+            # print("Random seeded.")
+            seed(10)
+            np.random.seed(10)
+        else:
+            print("Unseeded.")
         if config.feed == 'reset':
             count=0
-            for pat,v in dataset.items():
+            for z,(pat,v) in enumerate(dataset.items()):
                 for rep,replica in enumerate(v):
                     item = f'pat{pat}_rep{rep}'
                     print(f" --- Responding to pattern {pat}, replica {rep} ---")
@@ -298,46 +359,66 @@ class LiquidState():
                     item_liq = f'{config.full_loc}_{item}'
                     #################
                     #################
-                    example = inputs.dataset[pat][rep]
+                    if config.input_name != 'MNIST':
+                        example = inputs.dataset[pat][rep]
+                    else:
+                        example = count
+                        print(f"MNIST example = {example}")
                     timed = inputs.times[example]*ms #+ count*config.length*ms
-                    print("  Spike generator")
+                    # print("  Spike generator")
 
-                    seed(10)
+                    # seed(10)
                     SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)
-                    SP = Synapses(SGG, G,'w:1', on_pre='v+=w', dt=config.DT*us)                    
-                    SP.connect(p=config.input_sparsity)
-                    SP.w = np.random.choice([-2,2], SP.w.shape, p=[0.5, 0.5])
+
+                    if config.symmin == "True":
+                        print("  Symmetrical Input")
+                        SP = Synapses(SGG, G,'w:1', on_pre='v+=w', dt=config.DT*us)                    
+                        SP.connect(p=config.input_sparsity)
+                        SP.w = np.random.choice([-2,2], SP.w.shape, p=[0.5, 0.5])
+                    else:
+                        print("  Asymmetrical Input")
+                        SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)                    
+                        SP.connect(p=config.input_sparsity)
 
                     spikemon = SpikeMonitor(G)
                     nets.add(SGG, SP, spikemon)
-                    print("  Simulation")
+                    # print("  Simulation")
                     nets.run((config.length)*ms)
                     indices = np.array(spikemon.i)
                     times = np.array(spikemon.t/ms) #-count*config.length
-                    print("  Encoding")
+                    # print("  Encoding")
                     mats.append(one_hot(config.neurons,config.length,np.array(indices)[:],times[:]))
                     nets.remove(SGG,SP,spikemon)
                     nets.restore()
-                    print("  Restoring")
-                    #count+=1
+                    # print("  Restoring")
+                    count+=1
                     #################
                     #################
                     
-                    if rep == 0:
+                    if rep < config.save_spikes:
                         print("  Saving Spikes")
                         save_spikes(config.neurons,inputs.length,times,indices,loc_liq,item_liq,config.output_show)
 
         elif config.feed == 'continuous':
-            print("Continuous input")
+            # print("Continuous input")
             TIMED = [inputs.times[inputs.dataset[config.classes[pat]][rep]] + (pat*config.replicas+rep)*config.length for pat in range(config.patterns) for rep in range(config.replicas)]
             INDICED = [inputs.units[inputs.dataset[config.classes[pat]][rep]] for pat in range(config.patterns) for rep in range(config.replicas)]
             TIMED = np.concatenate(TIMED)*ms
             INDICED = np.concatenate(INDICED)
-            seed(10)
+            # seed(10)
             SGG = SpikeGeneratorGroup(inputs.channels, INDICED, TIMED, dt=config.DT*us)
-            SP = Synapses(SGG, G,'w:1', on_pre='v+=w', dt=config.DT*us)                    
-            SP.connect(p=config.input_sparsity)
-            SP.w = np.random.choice([-2,2], SP.w.shape, p=[0.5, 0.5])
+
+            if config.symmin == "True":
+                # print("  Symmetrical Input")
+                SP = Synapses(SGG, G,'w:1', on_pre='v+=w', dt=config.DT*us)                    
+                SP.connect(p=config.input_sparsity)
+                SP.w = np.random.choice([-2,2], SP.w.shape, p=[0.5, 0.5])
+            else:
+                # print("  Asymmetrical Input")
+                SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)                    
+                SP.connect(p=config.input_sparsity)
+
+
             spikemon = SpikeMonitor(G)
             nets.add(SGG, SP, spikemon)
             print("  Simulation")
@@ -363,8 +444,8 @@ class LiquidState():
                     item_liq = f'{config.full_loc}_{item}'
                     mats.append(one_hot(config.neurons,config.length,np.array(indice)[:],time[:]))
                     count+=1
-                    if rep == 0:
-                        print("  Saving Spikes")
+                    if rep < config.save_spikes:
+                        #print("  Saving Spikes")
                         save_spikes(config.neurons,inputs.length,time,indice,loc_liq,item_liq,config.output_show)
 
         storage_mats = np.array(mats)
@@ -482,7 +563,7 @@ class ReadoutMap():
         for i in range(len(self.testing)):
             prediction = logisticRegr.predict(self.testing[i].reshape(1, -1))
             predictions.append(prediction[0])
-        # print(predictions)
+        print(predictions)
         # print(self.test_target)
 
         raw_success = 0

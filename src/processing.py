@@ -109,6 +109,7 @@ def write_json(dict,dirName,exp,name):
     f.write(js)
     f.close()
 
+
 def write_dict(dict,path,name):
     for k,v in dict.items():
         dict[k] = np.array(v).tolist()

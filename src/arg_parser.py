@@ -6,11 +6,14 @@ def setup_argument_parser():
 
     # OO implementation
     parser.add_argument("--dir", help = " ", type = str, default = "test_sweep")
-    parser.add_argument("--input_name", help = " ",choices = ['Heidelberg','Poisson'], type = str, default = 'Heidelberg') #""Heidelberg")
+    parser.add_argument("--input_name", help = " ",choices = ['Heidelberg','Poisson','MNIST'], type = str, default = 'Heidelberg') #""Heidelberg")
     parser.add_argument("--input_file", help = " ", type = str, default = "shd_train.h5")
-    parser.add_argument("--classes", help = " ", type = str, default = ["A","B","C"])
+    parser.add_argument("--classes", help = " ", type = str, default = ["ZERO","ONE","TWO"])
     parser.add_argument("--feed", help = " ", choices = ['reset','continuous'], type = str, default = "reset")
     parser.add_argument("--ID", help = " ", type = int, default = None)
+    parser.add_argument("--seeding", help = " ", type = str, default = "True")
+    parser.add_argument("--save_spikes", help = " ", type = int, default = 1)
+    
 
 
     # input
@@ -21,6 +24,9 @@ def setup_argument_parser():
     parser.add_argument("--channels", help = " ", type = int, default = 40)
     parser.add_argument("--replicas", help = " ", type = int, default = 3)
     parser.add_argument("--jitter", help = " ", type = int, default = 10)
+    parser.add_argument("--symmin", help = " ", type = str, default = "False")
+    parser.add_argument("--symmres", help = " ", type = str, default = "False")
+
 
     # organizational
     # parser.add_argument("--storage", help = " ", type = bool, default = True)
@@ -36,7 +42,7 @@ def setup_argument_parser():
     parser.add_argument("--input_sparsity", help = "Sparsity of connection from input to reservoir", type = float, default = 0.3)
     parser.add_argument("--res_sparsity", help = "Interntal reservoir sparsity", type = float, default = .2)
     parser.add_argument("--STSP_U", help = "U value from the Mongillo equations", type = float, default = 0.6)
-    parser.add_argument("--x_atory", help = "Toggle ex/inhibatory behaviour", type = bool, default = False)
+    parser.add_argument("--x_atory", help = "Toggle ex/inhibatory behaviour", type = str, default = "False")
     parser.add_argument("--lamb", help = "For geometric only", type = int, default = None)
 
     
@@ -54,7 +60,7 @@ def setup_argument_parser():
     # Reruns
     parser.add_argument("--rerun", help = " ", type = str, default = "sweep")
     parser.add_argument("--rerun_single", help = " ", type = str, default = None)
-    parser.add_argument("--load_weights", help = " ", type = bool, default = False)
+    parser.add_argument("--load_weights", help = " ", type = str, default = "False")
 
 
 

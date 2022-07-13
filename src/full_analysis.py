@@ -87,7 +87,7 @@ class PerformanceAnalysis():
                 if file in tops:
                     plt.plot(avg)
             plt.title(f"Prediction Certainty Over Time",fontsize=24)
-            plt.ylim(0,1.1)
+            plt.ylim(0,1.01)
             plt.xlabel("Time (ms), dt=1ms",fontsize=22)
             plt.ylabel("Certainty for Correct Classification",fontsize=22)
         if self.save==True:
@@ -118,6 +118,8 @@ class PerformanceAnalysis():
             if i < vals:
                 print(np.round(value,4), " - ", key)
         print("\n")
+        print(f"Mean of {name} value: {np.array(list(dict.values())).mean()}")
+        print(f"Standard Deviation of {name} value: {np.array(list(dict.values())).std()}")
 
     def performance_statistics(self,config,dict,lim):
         """
@@ -169,10 +171,10 @@ class PerformanceAnalysis():
             occ_combos = {}
             for u in unique_combos:
                 occ_combos[u] = sets.count(u)
-            print(param_combo)
-            for k,v in occ_combos.items():
-                if str(k[0]) != 'None' and str(k[1]) != 'None':
-                    print("   ",k," - ",v)
+            # print(param_combo)
+            # for k,v in occ_combos.items():
+            #     if str(k[0]) != 'None' and str(k[1]) != 'None':
+            #         print("   ",k," - ",v)
             self.combos[param_combo] = occ_combos
 
     def hist_ranked(self):
@@ -182,7 +184,6 @@ class PerformanceAnalysis():
         """
         labels = list(set(self.hyperparams["learning"]))
         dict = self.combos[list(self.combos)[0]]
-        print(dict)
         RND=[0,0,0,0]
         GEO=[0,0,0,0]
         SMW=[0,0,0,0]
@@ -237,14 +238,23 @@ class PerformanceAnalysis():
         for i,l in enumerate(labels):
             for k,v in dict.items():
                 if k[0] == l:
-                    if k == (l,False,'reset'):
+                    if k == (l,'False','reset'):
                         plain[i]+=v*100/self.lim
-                    if k == (l,True,'reset'):
+                    if k == (l,'True','reset'):
                         xt[i]+=v*100/self.lim
-                    if k == (l,False,'continuous'):
+                    if k == (l,'False','continuous'):
                         cont[i]+=v*100/self.lim
-                    if k == (l,True,'continuous'):
+                    if k == (l,'True','continuous'):
                         xcont[i]+=v*100/self.lim
+
+                    # if k == (l,False,'reset'):
+                    #     plain[i]+=v*100/self.lim
+                    # if k == (l,True,'reset'):
+                    #     xt[i]+=v*100/self.lim
+                    # if k == (l,False,'continuous'):
+                    #     cont[i]+=v*100/self.lim
+                    # if k == (l,True,'continuous'):
+                    #     xcont[i]+=v*100/self.lim
 
         x = np.arange(len(labels)) 
         width = 0.18  
@@ -289,23 +299,41 @@ class PerformanceAnalysis():
             for k,v in dict.items():
                 if k[0] == l:
                     if l == 'rnd':
-                        if k == (l,False,'reset'):
+                        if k == (l,'False','reset'):
                             plain[i]+=v*300/self.lim
-                        if k == (l,True,'reset'):
+                        if k == (l,'True','reset'):
                             xt[i]+=v*300/self.lim
-                        if k == (l,False,'continuous'):
+                        if k == (l,'False','continuous'):
                             cont[i]+=v*300/self.lim
-                        if k == (l,True,'continuous'):
+                        if k == (l,'True','continuous'):
                             xcont[i]+=v*300/self.lim
                     else:
-                        if k == (l,False,'reset'):
+                        if k == (l,'False','reset'):
                             plain[i]+=v*100/self.lim
-                        if k == (l,True,'reset'):
+                        if k == (l,'True','reset'):
                             xt[i]+=v*100/self.lim
-                        if k == (l,False,'continuous'):
+                        if k == (l,'False','continuous'):
                             cont[i]+=v*100/self.lim
-                        if k == (l,True,'continuous'):
+                        if k == (l,'True','continuous'):
                             xcont[i]+=v*100/self.lim
+                    # if l == 'rnd':
+                    #     if k == (l,False,'reset'):
+                    #         plain[i]+=v*300/self.lim
+                    #     if k == (l,True,'reset'):
+                    #         xt[i]+=v*300/self.lim
+                    #     if k == (l,False,'continuous'):
+                    #         cont[i]+=v*300/self.lim
+                    #     if k == (l,True,'continuous'):
+                    #         xcont[i]+=v*300/self.lim
+                    # else:
+                    #     if k == (l,False,'reset'):
+                    #         plain[i]+=v*100/self.lim
+                    #     if k == (l,True,'reset'):
+                    #         xt[i]+=v*100/self.lim
+                    #     if k == (l,False,'continuous'):
+                    #         cont[i]+=v*100/self.lim
+                    #     if k == (l,True,'continuous'):
+                    #         xcont[i]+=v*100/self.lim
         
         x = np.arange(len(labels)) 
         width = 0.18  
@@ -333,7 +361,7 @@ class PerformanceAnalysis():
             plt.close()
 
 
-    def top_plot(self,size):
+    def top_plot(self,size,tb,lst):
         """
         Plotting Top 5 Performers and Their Replicas
         - Create a subplot grid
@@ -346,9 +374,14 @@ class PerformanceAnalysis():
         plt.figure(figsize=(24,14))
         
         fig, axs = plt.subplots(size, 3,figsize=(24,14))
-        plt.title("Title")
-        top_5 = list(self.final_perf_ranking)[:size]
-        print(self.classes[:self.patterns])
+        if tb == 'top':
+            top_5 = list(self.final_perf_ranking)[:size]
+        elif tb == 'bottom':
+            top_5 = list(self.final_perf_ranking)[-size:]
+        elif tb == "list":
+            top_5 = lst
+            size = len(lst)
+
         for i,pattern in enumerate(self.classes[:self.patterns]):
             suffix = "_pat"+pattern+"_rep0.txt"
             prefix = f'results/{self.sweep}/liquid/spikes/'
@@ -357,10 +390,11 @@ class PerformanceAnalysis():
                     break
                 #print(name+suffix)
                 dat, indices, times = txt_to_spks(prefix+name+suffix)
-                axs[j, i].plot(times, indices, '.k', ms=4/size)
+                axs[j, i].plot(times, indices, '.k', ms=.7)#/size)
+                axs[j, i].set_xlim([0, 700])
                 if i == 0:
                     axs[j, i].set_title(name, size=6)
-            axs[size, i].tick_params(
+            axs[j, i].tick_params(
                 axis='x',          # changes apply to the x-axis
                 which='both',      # both major and minor ticks are affected
                 bottom=False,      # ticks along the bottom edge are off
@@ -372,7 +406,7 @@ class PerformanceAnalysis():
         #     ax.label_outer()
 
         if self.save==True:
-            path = f'results/{self.sweep}/analysis/top{size}_performers.png'
+            path = f'results/{self.sweep}/analysis/{tb}{size}_performers.png'
             plt.savefig(path)
         if self.show==True:
             plt.show()
@@ -442,37 +476,31 @@ class StateAnalysis():
             mat = np.load(file, allow_pickle=True)
             self.MATs[exp_name] = mat
             # Across all
-            if new_pcs == True:
-                pcs_times = []
-                for t in range(config.length):
-                    step = 0
-                    pc_pats = []
-                    norms = []
-                    for p,pattern in enumerate(config.classes):
-                        # norms = []
-                        for r in range(config.replicas):
-                            slice = mat[step][:,t]
-                            norm = np.array(slice) - np.mean(slice)
-                            norms.append(norm)
-                            step+=1
-                    norms = np.array(norms)
-                    pc_obj = PCA(n_components=3)
-                    pc_slice = pc_obj.fit_transform(norms)
-                    #print(pc_slice)
-                    pcs_times.append(np.array(pc_slice))
-                pcs_times = np.array(pcs_times)
-                self.PCs[exp_name] = pcs_times
+            pcs_times = []
+            for t in range(config.length):
+                step = 0
+                pc_pats = []
+                norms = []
+                for p,pattern in enumerate(config.classes):
+                    # norms = []
+                    for r in range(config.replicas):
+                        slice = mat[step][:,t]
+                        norm = np.array(slice) - np.mean(slice)
+                        norms.append(norm)
+                        step+=1
+                norms = np.array(norms)
+                pc_obj = PCA(n_components=3)
+                pc_slice = pc_obj.fit_transform(norms)
+                #print(pc_slice)
+                pcs_times.append(np.array(pc_slice))
+            pcs_times = np.array(pcs_times)
+            self.PCs[exp_name] = pcs_times
 
-                dict = self.PCs
-                path = f'results/{config.dir}/analysis/'
-                name = 'all_pcs'
-                write_dict(dict,path,name)
+        dict = self.PCs
+        path = f'results/{config.dir}/analysis/'
+        name = 'all_pcs'
+        write_dict(dict,path,name)
 
-            else:
-                dirName = f'results/{config.dir}/analysis/'
-                item = 'all_pcs'
-                PCs = read_json(dirName,item)
-                self.PCs = PCs
 
         # dict = self.MATs
         # name = 'all_mats'
@@ -500,11 +528,11 @@ class StateAnalysis():
             pat_pos = []
             for j in range(config.replicas):
                 position = self.PCs[key][moment][count]
-                ax.scatter(position[0],position[1],position[2],marker=markers[i],color=colors[i],s=750,label=config.classes[i])
+                # ax.scatter(position[0],position[1],position[2],marker=markers[i],color=colors[i],s=750,label=config.classes[i])
                 pat_pos.append(position)
                 count+=1
             mean_pat = np.mean(np.array(pat_pos),axis=0)
-            ax.scatter(mean_pat[0],mean_pat[1],mean_pat[2],marker='.',color=colors[i],s=350,label=config.classes[i])
+            ax.scatter(mean_pat[0],mean_pat[1],mean_pat[2],marker='.',color=colors[i],s=500,label=config.classes[i])
 
         plt.xlim(-2.5,2.5)
         plt.ylim(-2.5,2.5)
@@ -771,12 +799,13 @@ class MetaAnalysis():
         """"
         Show relevant plots for specific experiment
         """
-        plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{config.classes[0]}_rep0.png')
-        plot.show()
+        for i in range(config.patterns):
+            plot = Image.open(f'{self.directory}/liquid/plots/{key}_pat{config.classes[i]}_rep0.png')
+            plot.show()
         plot = Image.open(f'{self.directory}/performance/plots/{key}_performance.png')
         plot.show()
-        # plot = Image.open(f'{self.directory}/analysis/full_paths/paths_{key}.png')
-        # plot.show()
+        plot = Image.open(f'{self.directory}/analysis/full_paths[150699]/paths_{key}.png') #[150699]
+        plot.show()
 
     def dict_compare(self,config,dict1,dict2):
         """
@@ -826,12 +855,13 @@ class MetaAnalysis():
         #plt.savefig(f"results/{sweep}/performance/rank_compare_{sweep}_{type}.png")
         plt.show()
 
-    def dist_plot(self,totals):
+    def dist_plot(self,rank,dict):
         ordered_distance = []
         plt.figure(figsize=(10,10))
-        for k in totals.keys():
-            ordered_distance.append(dist.diff_sum[k])
+        for k in rank.keys():
+            ordered_distance.append(dict[k])
         plt.plot(ordered_distance,'.k')
+        plt.show()
 
     # def control_test(self,second_sweep):
 

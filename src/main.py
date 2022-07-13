@@ -22,7 +22,7 @@ def main():
     ### SETUP ###
     # import arguments entered through command line as config object and define experiment name
     config = setup_argument_parser()
-    full_loc=f"{config.learning}_{config.topology}=(rand{config.rndp}_geo{config.lamb}_sm{config.beta})_N={config.neurons}_IS={config.input_sparsity}_RS={config.res_sparsity}_ref={config.refractory}_delay={config.delay}_U={config.STSP_U}_X{config.x_atory}_feed{config.feed}_ID{config.ID}"
+    full_loc=f"{config.learning}_{config.topology}=(rand{config.rndp}_geo{config.dims}_sm{config.beta})_N={config.neurons}_IS={config.input_sparsity}_RS={config.res_sparsity}_ref={config.refractory}_delay={config.delay}_U={config.STSP_U}_X{config.x_atory}_feed{config.feed}_ID{config.ID}"
     config.full_loc=full_loc
 
     ### INPUT ###
@@ -30,45 +30,49 @@ def main():
     # initialize input object with config parameters
     inputs = Input(config)
 
-    # for generating new input only
-    path = f'results/{config.dir}/inputs/spikes/'
-    if not exists(path) or len(os.listdir(path)) < config.replicas*config.patterns:
-        if config.input_name == "Heidelberg":
-            '''
-            - if spoken digit dataset, just input from Heidelberg
-            - convert data to suitable form for experiment
-            - define indices for the data of each label
-            - record class names in config.classes
-            '''
-            inputs.get_data()
-            dataset = inputs.make_dataset(config.patterns,config.replicas)
-            config.classes = list(dataset.keys())
+    if config.input_name == "MNIST":
+        config, dataset = inputs.MNIST(config)
 
-        elif config.input_name == "Poisson":
-            '''
-            - if spoken poisson dataset, generate new random data
-            - convert data to suitable form for experiment
-            - define indices for the data of each label
-            '''
-            print("Poisson")
-            dataset = inputs.generate_data(config)
+    else:
+        # for generating new input only
+        path = f'results/{config.dir}/inputs/spikes/'
+        if not exists(path) or len(os.listdir(path)) < config.replicas*config.patterns:
+            if config.input_name == "Heidelberg":
+                '''
+                - if spoken digit dataset, just input from Heidelberg
+                - convert data to suitable form for experiment
+                - define indices for the data of each label
+                - record class names in config.classes
+                '''
+                inputs.get_data()
+                dataset = inputs.make_dataset(config.patterns,config.replicas)
+                config.classes = list(dataset.keys())
 
-        # in all cases, save dataset and print indices of each pattern
-        inputs.save_data(config.dir)
-        print(f'Dataset Generated with {config.patterns} patterns and {config.replicas} replicas.')
+            elif config.input_name == "Poisson":
+                '''
+                - if spoken poisson dataset, generate new random data
+                - convert data to suitable form for experiment
+                - define indices for the data of each label
+                '''
+                print("Poisson")
+                dataset = inputs.generate_data(config)
+
+            # in all cases, save dataset and print indices of each pattern
+            inputs.save_data(config.dir)
+            print(f'Dataset Generated with {config.patterns} patterns and {config.replicas} replicas.')
+            for k,v in dataset.items():
+                print(f"  Pattern {k} at indices {v}")
+            inputs.describe()
+
+        # If no new input is needed, simply read in existing input
+        # Define class names depending on experiment type
+        # elif config.just_input == False:
+
+        config, dataset = inputs.read_data(config)
+        print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
         for k,v in dataset.items():
             print(f"  Pattern {k} at indices {v}")
         inputs.describe()
-
-    # If no new input is needed, simply read in existing input
-    # Define class names depending on experiment type
-    # elif config.just_input == False:
-
-    config, dataset = inputs.read_data(config)
-    print(f'Dataset Read with {config.patterns} patterns and {config.replicas} replicas.')
-    for k,v in dataset.items():
-        print(f"  Pattern {k} at indices {v}")
-    inputs.describe()
 
 
     ### RESERVOIR ###
