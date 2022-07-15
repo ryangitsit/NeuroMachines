@@ -134,7 +134,7 @@ class Input:
 
     def MNIST(self,config,todo):
         self.channels = config.channels = 28*28
-        self.length = config.length = 350
+        self.length = config.length = config.len_MNIST
         from keras.datasets import mnist
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
@@ -182,9 +182,9 @@ class Input:
                 # indices.append(spikes_i)
                 # times.append(spikes_t)
 
-                print(f"Saving pattern {y_train[i]}, replica {i}")
+                print(f"Saving pattern {n}, replica {count}")
                 loc = f'{config.dir}/inputs'
-                item = f'pat{n}_rep{i}'
+                item = f'pat{n}_rep{count}'
                 self.units.append(spikes_i)
                 self.times.append(spikes_t*1000)
                 self.data[n].append(count)
@@ -331,7 +331,7 @@ class LiquidState():
             else:
                 config.DT = 1000
         elif inputs.input_name =='MNIST':
-            config.DT = 10
+            config.DT = 100
 
         if config.load_weights == "True":
             print("Loading saved weights...")

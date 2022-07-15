@@ -142,7 +142,7 @@ def save_spikes(N,T,times,indices,location,item,show):
     #     raster_run_input(times,indices,dirName2,item)
     # else:
     # if item[-1] == '0' or len(item) < 20:
-    raster_save(times,indices,dirName2,item,show)
+    #raster_save(times,indices,dirName2,item,show)
 
 
 def billboard(word):

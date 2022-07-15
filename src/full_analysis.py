@@ -37,6 +37,7 @@ class PerformanceAnalysis():
         self.classes = config.classes
         self.save = save
         self.show = show
+        self.length = config.length
 
     def __str__(self):
         return f"Dataset: \n{self.__dict__}"
@@ -207,7 +208,7 @@ class PerformanceAnalysis():
         rects3 = plt.bar(x + width+.01, SMW, width, label='small-world')
 
         plt.ylabel('Percent Present',fontsize=18)
-        plt.title(f'Configurations in top {self.lim} Performers',fontsize=22)
+        plt.title(f'MNIST - Configs in top {self.lim} Performers',fontsize=22)
         plt.xticks(x, labels,fontsize=18)
         plt.legend(fontsize=20) # using a size in points
         plt.legend(fontsize="x-large") # using a named size
@@ -390,8 +391,8 @@ class PerformanceAnalysis():
                     break
                 #print(name+suffix)
                 dat, indices, times = txt_to_spks(prefix+name+suffix)
-                axs[j, i].plot(times, indices, '.k', ms=.7)#/size)
-                axs[j, i].set_xlim([0, 700])
+                axs[j, i].plot(times, indices, '.k', ms=.5)#/size)
+                axs[j, i].set_xlim([0, self.length])
                 if i == 0:
                     axs[j, i].set_title(name, size=6)
             axs[j, i].tick_params(

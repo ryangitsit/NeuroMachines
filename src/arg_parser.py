@@ -13,6 +13,9 @@ def setup_argument_parser():
     parser.add_argument("--ID", help = " ", type = int, default = None)
     parser.add_argument("--seeding", help = " ", type = str, default = "True")
     parser.add_argument("--save_spikes", help = " ", type = int, default = 1)
+    parser.add_argument("--len_MNIST", help = " ", type = int, default = 240)
+    
+
     
 
 
