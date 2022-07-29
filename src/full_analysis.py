@@ -111,6 +111,14 @@ class PerformanceAnalysis():
     def rankings(self):
         self.final_perf_ranking = dict(sorted(self.all_finals.items(), key=lambda item: item[1], reverse=True))
         self.total_perf_ranking = dict(sorted(self.all_totals.items(), key=lambda item: item[1], reverse=True))
+        dic = self.final_perf_ranking
+        path = f'results/{self.sweep}/analysis/'
+        name = "finals"
+        write_dict(dic,path,name)
+        dic = self.total_perf_ranking 
+        path = f'results/{self.sweep}/analysis/'
+        name = "totals"
+        write_dict(dic,path,name)
         return self.final_perf_ranking, self.total_perf_ranking
 
     def print_rankings(self,dict,name,vals):
@@ -150,20 +158,24 @@ class PerformanceAnalysis():
             file_to_read.close()
             for param in hyper_parameters.keys():
                 hyper_parameters[param].append(experiment.__dict__[param])
-        self.hyperparams = hyper_parameters
+        
         print(f"Hyper Parameter Occurences in Top {lim} Performers")
+        self.stats = {}
         for k,v in hyper_parameters.items():
             if k == 'dims':
                 for i in range(len(v)):
                     v[i] = str(v[i])
             uniques = set(v)
-            occ = {}
+            self.occ = {}
             for u in uniques:
-                occ[u] = v.count(u)
-            print(f"{k} => {occ}")
-        
+                self.occ[u] = v.count(u)
+            print(f"{k} => {self.occ}")
+            self.stats[k] = self.occ
+        self.hyperparams = hyper_parameters
+
         hyper_combos = list(itertools.combinations(list(hyper_parameters),3))
         self.combos = {}
+        
         for param_combo in hyper_combos:
             sets = []
             for i in range(lim):
@@ -172,6 +184,7 @@ class PerformanceAnalysis():
             occ_combos = {}
             for u in unique_combos:
                 occ_combos[u] = sets.count(u)
+                
             # print(param_combo)
             # for k,v in occ_combos.items():
             #     if str(k[0]) != 'None' and str(k[1]) != 'None':
@@ -772,17 +785,36 @@ class DistanceAnalysis():
         write_dict(self.diff,dirName,"diff")
         write_dict(self.diff_sum,dirName,"dif_sum")
             
-    def dist_plot(self,dict):
-        """
-        Plot distances over performance rankings
-        """
-        ordered_distance = []
-        plt.figure(figsize=(10,10))
-        for k in dict.keys():
-            ordered_distance.append(self.diff_sum[k])
-        plt.plot(ordered_distance,'.k')
+    def dist_plot(self,params,dists,over,title):
+        from itertools import repeat
+        param_dict = {}
+        for param in params.keys():
+            param = str(param)
+            if title == 'input_sparsity':
+                param = 'IS='+param
+            if title == 'res_sparsity':
+                param = 'RS='+param
+            if title == 'tppology':
+                param = '_'+param+'='
+            param_dict[param] = []
+        for x,k in enumerate(over.keys()):
+            for i,param in enumerate(list(param_dict)):
+                if param in k:
+                    if len(dists[k]) == 1:
+                        dist = dists[k]
+                    else:
+                        dist = sum(dists[k])
+                    param_dict[param].append([x,dist])
+        plt.figure(figsize=(15,15))
+        plt.title(title)
+        plt.style.use('seaborn-muted')
+        for i,(k,v) in enumerate(param_dict.items()):
+            param_dict[k] = np.array(param_dict[k])
+            plt.plot(param_dict[k][:,0],np.log(param_dict[k][:,1]),'.',label=list(params)[i])
+        plt.legend()
+
         if self.save==True:
-            path = f'results/{self.sweep}/analysis/distance_plot.png'
+            path = f'results/{self.sweep}/analysis/dist_plot_{title}.png'
             plt.savefig(path)
         if self.show==True:
             plt.show()
@@ -856,13 +888,13 @@ class MetaAnalysis():
         #plt.savefig(f"results/{sweep}/performance/rank_compare_{sweep}_{type}.png")
         plt.show()
 
-    def dist_plot(self,rank,dict):
-        ordered_distance = []
-        plt.figure(figsize=(10,10))
-        for k in rank.keys():
-            ordered_distance.append(dict[k])
-        plt.plot(ordered_distance,'.k')
-        plt.show()
+    # def dist_plot(self,rank,dict):
+    #     ordered_distance = []
+    #     plt.figure(figsize=(10,10))
+    #     for k in rank.keys():
+    #         ordered_distance.append(dict[k])
+    #     plt.plot(ordered_distance,'.k')
+    #     plt.show()
 
     # def control_test(self,second_sweep):
 

@@ -11,7 +11,7 @@ from plotting import raster_run_input, raster_save
 def spks_to_txt(N,indices,times,prec,name):
     """
     Convert Brain spikes to txt file
-     - Each line is a neuron indexe
+     - Each line is a neuron index
      - Firing times are recorded at at their appropriate neuron row
     """
     with open(f'{name}.txt', 'w') as f:
@@ -142,7 +142,7 @@ def save_spikes(N,T,times,indices,location,item,show):
     #     raster_run_input(times,indices,dirName2,item)
     # else:
     # if item[-1] == '0' or len(item) < 20:
-    #raster_save(times,indices,dirName2,item,show)
+    #     raster_save(times,indices,dirName2,item,show)
 
 
 def billboard(word):

@@ -1,4 +1,3 @@
-from re import L
 from full_analysis import PerformanceAnalysis, StateAnalysis, DistanceAnalysis, MetaAnalysis
 import os
 import pickle
@@ -15,8 +14,8 @@ Execution file for full_analysis.py
 def main():
     # sweep = "rerun_LSTP"
     # sweep = "hei_large2"
-    sweep = "SuperSweep_MNIST_asymm"
-    # sweep = "LightSweep_4r"
+    # sweep = "SuperSweep_MNIST_asymm"
+    sweep = "SuperSweep4"
 
     save = True
     show = False
@@ -45,29 +44,16 @@ def main():
     full_analysis.accs_plots()
     finals, totals = full_analysis.rankings()
 
-    full_analysis.print_rankings(finals,"Final Performance",520)
-    full_analysis.print_rankings(totals,"Total Performance",200)
+    # full_analysis.print_rankings(finals,"Final Performance",520)
+    # full_analysis.print_rankings(totals,"Total Performance",200)
 
+    full_analysis.performance_statistics(config,totals,1008) # must not exceed experiment total
 
-
-    # dict = finals
-    # path = f'results/{config.dir}/analysis/'
-    # name = "finals"
-    # write_dict(dict,path,name)
-    
-
-    full_analysis.performance_statistics(config,totals,182) # must not exceed experiment total
-
-    full_analysis.hist_ranked()
-    full_analysis.hist_alt()
-    full_analysis.hist_alt_top()
-    # k1 = 'Maass_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.2_RS=0.1_ref=0.0_delay=1.5_U=0.6_XTrue_feedcontinuous_IDNone'
-    # k2 = 'LSTP_geo=(randNone_geo[27, 5, 1]_smNone)_N=135_IS=0.1_RS=0.2_ref=0.0_delay=1.5_U=0.6_XFalse_feedcontinuous_IDNone'
-    # k3 = 'STDP_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.1_RS=0.1_ref=0.0_delay=1.5_U=0.6_XFalse_feedcontinuous_IDNone'
-    # k4 = 'STSP_rnd=(rand0.2_geoNone_smNone)_N=135_IS=0.3_RS=0.2_ref=0.0_delay=1.5_U=0.6_XTrue_feedreset_IDNone'
-    # lst = [k2,k1,k3,k4]
-    lst = list(totals)[:5]
-    full_analysis.top_plot(5,"list",lst)
+    # full_analysis.hist_ranked()
+    # full_analysis.hist_alt()
+    # full_analysis.hist_alt_top()
+    # lst = list(totals)[:5]
+    # full_analysis.top_plot(5,"list",lst)
 
     # top_finals=dict(itertools.islice(finals.items(),10))
     # top_totals=dict(itertools.islice(totals.items(),10))
@@ -79,13 +65,13 @@ def main():
 
     # # ### State Analysis ###
     config.old_encoded = False
-    state_analysis = StateAnalysis(config,save,show)
+    # state_analysis = StateAnalysis(config,save,show)
 
     # # If analysis has already been run once, use saved results
-    if exists(f'results/{sweep}/analysis/all_pcs.json'):
-        MATs, PCs = state_analysis.analysis_loop(config,False)
-    else:
-        MATs, PCs = state_analysis.analysis_loop(config,True)
+    # if exists(f'results/{sweep}/analysis/all_pcs.json'):
+    #     MATs, PCs = state_analysis.analysis_loop(config,False)
+    # else:
+    #     MATs, PCs = state_analysis.analysis_loop(config,True)
 
     # dirName = f'results/{sweep}/analysis/'
     # item = 'all_pcs'
@@ -99,10 +85,10 @@ def main():
     #     state_analysis.pc_polygons(config,k,i)
 
     # # # # # # Plot all full paths 
-    print(f"Plotting all PC paths...")
-    for i in range(len(totals)):
-        print(list(totals)[i])
-        state_analysis.full_path_plot(config,list(totals)[i],0,239)
+    # print(f"Plotting all PC paths...")
+    # for i in range(len(totals)):
+    #     print(list(totals)[i])
+    #     state_analysis.full_path_plot(config,list(totals)[i],0,239)
 
     # # # # Plot PCs at every moment for top total performer
     # # k = list(totals)[0]
@@ -111,19 +97,21 @@ def main():
     # for t in range(config.length):
     #     state_analysis.full_pc_plot(config,k,t)
 
-    # # # # ### Distance Analysis ###
-    # # # #Determine distance metrics across states for different samples
+    ### Distance Analysis ###
+    # Determine distance metrics across states for different samples
+
     dist = DistanceAnalysis(config,save,show)
-    dist.all_dists(config,MATs)
-    dist.dist_plot(totals)
+    # dist.all_dists(config,MATs)
+    print(full_analysis.stats)
+    for params,v in full_analysis.stats.items():
+        dists = dist.diff
+        over = totals
+        print(params,v)
+        dist.dist_plot(v,dists,over,params)
     
 
-    # # # # ### Meta Analysis ###
+    ### Meta Analysis ###
     # meta = MetaAnalysis(config,save,show)
-    # # k = 'Maass_smw=(randNone_geoNone_sm0.66)_N=135_IS=0.3_RS=0.3_ref=0.0_delay=1.5_U=0.6_XTrue_feedreset'
-    # # k = 'Maass_rnd=(rand0.4_geoNone_smNone)_N=135_IS=0.2_RS=0.4_ref=3.0_delay=1.5_U=0.6'
-    # # k = 'Maass_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.2_RS=0.2_ref=0.0_delay=1.5_U=0.6_XTrue_feedreset_IDNone'
-    # k = list(finals)
     # for i in range(len(finals)-10,len(finals)):
     #     print(k[i])
     #     meta.show_all(config,k[i])
@@ -147,3 +135,16 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# k1 = 'Maass_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.2_RS=0.1_ref=0.0_delay=1.5_U=0.6_XTrue_feedcontinuous_IDNone'
+# k2 = 'LSTP_geo=(randNone_geo[27, 5, 1]_smNone)_N=135_IS=0.1_RS=0.2_ref=0.0_delay=1.5_U=0.6_XFalse_feedcontinuous_IDNone'
+# k3 = 'STDP_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.1_RS=0.1_ref=0.0_delay=1.5_U=0.6_XFalse_feedcontinuous_IDNone'
+# k4 = 'STSP_rnd=(rand0.2_geoNone_smNone)_N=135_IS=0.3_RS=0.2_ref=0.0_delay=1.5_U=0.6_XTrue_feedreset_IDNone'
+# lst = [k2,k1,k3,k4]
+
+
+# # k = 'Maass_smw=(randNone_geoNone_sm0.66)_N=135_IS=0.3_RS=0.3_ref=0.0_delay=1.5_U=0.6_XTrue_feedreset'
+# # k = 'Maass_rnd=(rand0.4_geoNone_smNone)_N=135_IS=0.2_RS=0.4_ref=3.0_delay=1.5_U=0.6'
+# # k = 'Maass_smw=(randNone_geoNone_sm0.0)_N=135_IS=0.2_RS=0.2_ref=0.0_delay=1.5_U=0.6_XTrue_feedreset_IDNone'
+# k = list(finals)

@@ -237,8 +237,10 @@ class Input:
         count = 0
         for i,pattern in enumerate(classes):
             print("Pattern: ", pattern)
-            print(config.rate_low+i*20, config.rate_high + i*20)
+            # print(config.rate_low+i*20, config.rate_high + i*20)
             rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low+i*5, config.rate_high + i*5, config.length)
+            # rand_rates, indices,times = gen_poisson_pattern(config.channels, config.rate_low, config.rate_high, config.length)
+            print(rand_rates)
             rates_dict[pattern] = rand_rates
             for r in range(replicas):
                 print(" Replica: ", r)
@@ -324,7 +326,7 @@ class LiquidState():
     def respond(self,config,inputs,dataset):
 
         if inputs.input_name == 'Poisson':
-            config.DT = 10
+            config.DT = 1
         elif inputs.input_name =='Heidelberg':
             if config.feed == "continuous" and config.replicas>3:
                 config.DT = 10
@@ -372,8 +374,20 @@ class LiquidState():
                     else:
                         example = count
                         print(f"MNIST example = {example}")
-                    timed = inputs.times[example]*ms #+ count*config.length*ms
+                    timed = np.round(inputs.times[example],2)*ms #+ count*config.length*ms
                     # print("  Spike generator")
+
+                    # print(timed)
+                    # print(inputs.units[example])
+                    # import matplotlib.pyplot as plt
+                    # plt.figure(figsize=(12, 8))
+                    # plt.plot(timed/ms, inputs.units[example], '.k')
+                    # plt.xlim(0,config.length)
+                    # plt.ylim(0,inputs.channels)
+                    # plt.title('Raster Plot')
+                    # plt.xlabel('Time (ms)')
+                    # plt.ylabel('Neuron index')
+                    # plt.show()
 
                     # seed(10)
                     SGG = SpikeGeneratorGroup(inputs.channels, inputs.units[example], timed, dt=config.DT*us)

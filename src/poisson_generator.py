@@ -17,11 +17,15 @@ def gen_poisson_pattern(channels, rate_low, rate_high, sim):
     #rate_low = randint(1,50)
     # rate_high=rate_low+1
     
-    rand_rates = np.random.randint(rate_low,rate_high, channels)
-    print(rand_rates)
+    # rand_rates = np.random.randint(rate_low,rate_high, channels)
+    # print(rand_rates)
+    input_rate = np.random.randint(rate_low,rate_high, 1)
+    print("INPUT RATE = ", input_rate)
+    rand_rates = np.ones(channels)*input_rate[0]
 
     for input in range(channels):
-        input_rate=(rand_rates[input])*Hz
+        # input_rate=(rand_rates[input])*Hz
+        input_rate=(rand_rates[0])*Hz
         P = PoissonGroup(1, rates=input_rate)
         MP = SpikeMonitor(P)
         net = Network(P, MP)

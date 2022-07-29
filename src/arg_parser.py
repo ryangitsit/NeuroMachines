@@ -22,8 +22,8 @@ def setup_argument_parser():
     # input
     parser.add_argument("--patterns", help = " ", type = int, default = 3)
     parser.add_argument("--length", help = " ", type = int, default = 700)
-    parser.add_argument("--rate_low", help = " ", type = int, default = 0)
-    parser.add_argument("--rate_high", help = " ", type = int, default = 5)
+    parser.add_argument("--rate_low", help = " ", type = int, default = 10)
+    parser.add_argument("--rate_high", help = " ", type = int, default = 15)
     parser.add_argument("--channels", help = " ", type = int, default = 40)
     parser.add_argument("--replicas", help = " ", type = int, default = 3)
     parser.add_argument("--jitter", help = " ", type = int, default = 10)
