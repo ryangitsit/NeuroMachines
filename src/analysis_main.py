@@ -12,10 +12,11 @@ Execution file for full_analysis.py
 
 
 def main():
-    # sweep = "rerun_LSTP"
+    # sweep = "fresh_direct"
+
     # sweep = "hei_large2"
-    # sweep = "SuperSweep_MNIST_asymm"
-    sweep = "SuperSweep4"
+    sweep = "SuperSweep_MNIST_asymm"
+    #sweep = "SuperSweep4"
 
     save = True
     show = False
@@ -44,16 +45,18 @@ def main():
     full_analysis.accs_plots()
     finals, totals = full_analysis.rankings()
 
-    # full_analysis.print_rankings(finals,"Final Performance",520)
-    # full_analysis.print_rankings(totals,"Total Performance",200)
+    # full_analysis.print_rankings(finals,"Final Performance",550)#int(len(finals)/10))
+    # full_analysis.print_rankings(totals,"Total Performance",550) #int(len(finals)/10))
 
-    full_analysis.performance_statistics(config,totals,1008) # must not exceed experiment total
+    full_analysis.performance_statistics(config,totals,182) # must not exceed experiment total
 
-    # full_analysis.hist_ranked()
-    # full_analysis.hist_alt()
-    # full_analysis.hist_alt_top()
-    # lst = list(totals)[:5]
-    # full_analysis.top_plot(5,"list",lst)
+
+
+    full_analysis.hist_ranked()
+    full_analysis.hist_alt()
+    full_analysis.hist_alt_top()
+    lst = list(totals)[:5]
+    full_analysis.top_plot(5,"list",lst)
 
     # top_finals=dict(itertools.islice(finals.items(),10))
     # top_totals=dict(itertools.islice(totals.items(),10))
@@ -64,10 +67,10 @@ def main():
 
 
     # # ### State Analysis ###
-    config.old_encoded = False
+    # config.old_encoded = False
     # state_analysis = StateAnalysis(config,save,show)
 
-    # # If analysis has already been run once, use saved results
+    # # # If analysis has already been run once, use saved results
     # if exists(f'results/{sweep}/analysis/all_pcs.json'):
     #     MATs, PCs = state_analysis.analysis_loop(config,False)
     # else:
@@ -86,7 +89,7 @@ def main():
 
     # # # # # # Plot all full paths 
     # print(f"Plotting all PC paths...")
-    # for i in range(len(totals)):
+    # for i in range(100):
     #     print(list(totals)[i])
     #     state_analysis.full_path_plot(config,list(totals)[i],0,239)
 
@@ -100,14 +103,14 @@ def main():
     ### Distance Analysis ###
     # Determine distance metrics across states for different samples
 
-    dist = DistanceAnalysis(config,save,show)
+    # dist = DistanceAnalysis(config,save,show)
     # dist.all_dists(config,MATs)
-    print(full_analysis.stats)
-    for params,v in full_analysis.stats.items():
-        dists = dist.diff
-        over = totals
-        print(params,v)
-        dist.dist_plot(v,dists,over,params)
+    # print(full_analysis.stats)
+    # for params,v in full_analysis.stats.items():
+    #     dists = dist.diff
+    #     over = totals
+    #     print(params,v)
+    #     dist.dist_plot(v,dists,over,params)
     
 
     ### Meta Analysis ###

@@ -440,13 +440,53 @@ class LiquidState():
                 SP = Synapses(SGG, G, on_pre='v+=1', dt=config.DT*us)                    
                 SP.connect(p=config.input_sparsity)
 
-
             spikemon = SpikeMonitor(G)
-            nets.add(SGG, SP, spikemon)
+
+             #################### #################### ####################
+
+            if config.trace == "True":
+                if config.learning == 'STSP':
+                    synaptic = StateMonitor(S,['w','v','u','r'], record=True)
+                elif config.learning == 'STDP':
+                    synaptic = StateMonitor(S,['w','v','apre','apost'], record=True)
+
+
+
+            if config.trace == "True":
+                nets.add(SGG, SP, spikemon,synaptic)
+            else:
+                nets.add(SGG, SP, spikemon,synaptic)
             print("  Simulation")
             nets.run((config.length*config.patterns*config.replicas)*ms)
             indices = np.array(spikemon.i)
             times = np.array(spikemon.t/ms) #-count*config.length
+
+            #print(synaptic.u.shape,synaptic.r.shape) ################
+            plt.figure(figsize=(16, 10))
+            plt.plot(times, indices, '.k',ms=0.2)
+
+            if config.trace == "True":
+                if config.learning == 'STSP':
+                    plt.ylim(0,135)
+                    plt.plot(TIMED/ms, INDICED/5.185, '.k',ms=.5,color='g')
+                    plt.plot(np.mean(np.array(synaptic.u)**4*135,axis=0), linewidth=.25, label = 'calcium')
+                    plt.plot(np.mean(np.array(synaptic.r)*4*135,axis=0), linewidth=.25, label = 'resources')
+                    plt.plot(np.mean(np.array(synaptic.w)*135,axis=0), linewidth=.5, label = 'w')
+                    plt.plot(np.mean(np.array(synaptic.v)*2,axis=0), linewidth=.25, label = 'v')
+                elif config.learning == 'STDP':
+                    print(synaptic.apre)
+                    plt.ylim(0,135)
+                    plt.plot(TIMED/ms, INDICED/5.185, '.k',ms=.5,color='g')
+                    plt.plot(np.mean(np.array(synaptic.apre)*1350,axis=0), linewidth=2.5, label = 'apre')
+                    plt.plot(np.mean(np.array(synaptic.apost)*1350+135,axis=0), linewidth=2.5, label = 'apost')
+                    plt.plot(np.mean(np.array(synaptic.w)*1350,axis=0), linewidth=.5, label = 'w')
+                    plt.plot(np.mean(np.array(synaptic.v)*2,axis=0), linewidth=.25, label = 'v')
+                plt.title('Raster Plot')
+                plt.xlabel('Time (ms)')
+                plt.ylabel('Neuron index')
+                plt.legend()
+                plt.show()
+
             zipped = zip(indices,times)
             zipped = list(zipped)
             ordered_spikes = np.array(sorted(zipped, key = lambda x: x[1]))
@@ -469,6 +509,7 @@ class LiquidState():
                     if rep < config.save_spikes:
                         #print("  Saving Spikes")
                         save_spikes(config.neurons,inputs.length,time,indice,loc_liq,item_liq,config.output_show)
+
 
         storage_mats = np.array(mats)
         # print(storage_mats)

@@ -510,10 +510,10 @@ class StateAnalysis():
             pcs_times = np.array(pcs_times)
             self.PCs[exp_name] = pcs_times
 
-        dict = self.PCs
-        path = f'results/{config.dir}/analysis/'
-        name = 'all_pcs'
-        write_dict(dict,path,name)
+        # dict = self.PCs
+        # path = f'results/{config.dir}/analysis/'
+        # name = 'all_pcs'
+        # write_dict(dict,path,name)
 
 
         # dict = self.MATs
